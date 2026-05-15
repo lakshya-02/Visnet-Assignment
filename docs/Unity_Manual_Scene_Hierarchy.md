@@ -1,6 +1,6 @@
 # Unity Manual Scene Hierarchy and Inspector Setup
 
-This guide assumes the hierarchy is empty and you are rebuilding the Unity scene manually with OpenXR + Unity XR Interaction Toolkit.
+This guide matches the current project direction: OpenXR + Unity XR Interaction Toolkit, with a manually built world-space UI. As of the latest scene check, `MainScene.unity` already contains the XRI rig/prefab, `Input Action Manager`, `EventSystem`, and a world-space canvas object named `WorldSpace`. The remaining work is to build the UI panels and wire the app scripts.
 
 ## Required Packages
 
@@ -14,7 +14,47 @@ UGUI / Unity UI                       com.unity.ugui
 Universal Render Pipeline             com.unity.render-pipelines.universal
 ```
 
-## Build Order
+## Current Scene Status
+
+Already present in the saved scene:
+
+```text
+XR Origin (XR Rig)
+Input Action Manager
+EventSystem
+WorldSpace
+Main Camera / Directional Light / Global Volume
+```
+
+Build Settings has been updated to use:
+
+```text
+Assets/Scenes/MainScene.unity
+```
+
+Still to create:
+
+```text
+SafeArea
+LoginPanel
+ProjectListPanel
+FloorSelectionPanel
+SummaryPanel
+ToastPanel
+AppManager
+```
+
+## Build Order From Here
+
+1. Rename `WorldSpace` to `WorldSpaceCanvas`.
+2. Configure `WorldSpaceCanvas` as a world-space canvas.
+3. Add `SafeArea` under `WorldSpaceCanvas`.
+4. Create `LoginPanel`, `ProjectListPanel`, `FloorSelectionPanel`, `SummaryPanel`, and `ToastPanel`.
+5. Add `AppManager` and attach API/session/navigation/controller scripts.
+6. Wire all Inspector references.
+7. Test with mouse first, then XR ray, then APK.
+
+## Full Build Order If Starting From Empty
 
 1. Import XRI Starter Assets and XR Device Simulator.
 2. Add XR Origin, XR Interaction Manager, Input Action Manager, and EventSystem.
@@ -78,6 +118,8 @@ Use:
 ```text
 Assets/Samples/XR Interaction Toolkit/3.0.10/Starter Assets/XRI Default Input Actions.inputactions
 ```
+
+If `Input Action Manager` already exists, only verify that `XRI Default Input Actions` is assigned. Do not create a duplicate.
 
 ## XR Ray Interactor
 
@@ -165,6 +207,14 @@ Input Action Manager has XRI Default Input Actions
 
 ## WorldSpaceCanvas
 
+Rename the current `WorldSpace` object to:
+
+```text
+WorldSpaceCanvas
+```
+
+Then set:
+
 ```text
 Render Mode: World Space
 Width: 1200
@@ -188,6 +238,29 @@ Canvas Scaler:
 ```text
 UI Scale Mode: Constant Pixel Size
 Dynamic Pixels Per Unit: 10
+```
+
+Hierarchy under canvas:
+
+```text
+WorldSpaceCanvas
+|-- SafeArea
+    |-- LoginPanel
+    |-- ProjectListPanel
+    |-- FloorSelectionPanel
+    |-- SummaryPanel
+    |-- ToastPanel
+```
+
+`SafeArea` RectTransform:
+
+```text
+Anchor Min: X 0.5, Y 0.5
+Anchor Max: X 0.5, Y 0.5
+Pivot: X 0.5, Y 0.5
+Width: 900
+Height: 620
+Position: X 0, Y 0, Z 0
 ```
 
 ## Visual Style
@@ -226,6 +299,28 @@ LoginPanel
 |-- StatusText
 ```
 
+Panel RectTransform:
+
+```text
+Width: 850
+Height: 560
+Position: X 0, Y 0
+```
+
+Recommended layout:
+
+```text
+Vertical Layout Group
+Padding Left/Right: 56
+Padding Top: 46
+Padding Bottom: 42
+Spacing: 18
+Child Control Width: On
+Child Control Height: Off
+Child Force Expand Width: On
+Child Force Expand Height: Off
+```
+
 Attach:
 
 ```text
@@ -251,6 +346,15 @@ ProjectListPanel
 |-- ProjectListRoot
 |   |-- ProjectButtonTemplate
 |-- BackButton                "Logout"
+```
+
+Panel RectTransform:
+
+```text
+Width: 850
+Height: 560
+Position: X 0, Y 0
+Initially Active: Off
 ```
 
 Attach:
@@ -288,6 +392,15 @@ FloorSelectionPanel
 |   |-- FloorButtonTemplate
 |-- ContinueButton            "Continue"
 |-- BackButton                "Back"
+```
+
+Panel RectTransform:
+
+```text
+Width: 850
+Height: 560
+Position: X 0, Y 0
+Initially Active: Off
 ```
 
 Attach:
@@ -330,6 +443,15 @@ SummaryPanel
 |-- RestartButton             "Start Again"
 ```
 
+Panel RectTransform:
+
+```text
+Width: 850
+Height: 560
+Position: X 0, Y 0
+Initially Active: Off
+```
+
 Attach:
 
 ```text
@@ -356,6 +478,18 @@ ToastPanel
 |-- ToastText
 ```
 
+Toast RectTransform:
+
+```text
+Anchor Min: X 0.5, Y 0
+Anchor Max: X 0.5, Y 0
+Pivot: X 0.5, Y 0
+Width: 650
+Height: 72
+Position: X 0, Y 56
+Initially Active: Off
+```
+
 Attach:
 
 ```text
@@ -373,6 +507,8 @@ fadeSeconds: 0.25
 ```
 
 ## AppManager
+
+Create this as a root-level empty GameObject, not inside the canvas.
 
 ```text
 AppManager
@@ -408,6 +544,30 @@ Project List UI: ProjectListUI
 Floor Dropdown UI: FloorDropdownUI
 Summary UI: SummaryUI
 Toast UI: ToastUI
+```
+
+Important:
+
+```text
+AuthAPI.API Manager -> AppManager/APIManager
+ProjectAPI.API Manager -> AppManager/APIManager
+ManualXrAppController.Login UI -> LoginPanel/LoginUI
+ManualXrAppController.Project List UI -> ProjectListPanel/ProjectListUI
+ManualXrAppController.Floor Dropdown UI -> FloorSelectionPanel/FloorDropdownUI
+ManualXrAppController.Summary UI -> SummaryPanel/SummaryUI
+ManualXrAppController.Toast UI -> ToastPanel/ToastUI
+```
+
+## Common Mistakes To Avoid
+
+```text
+Do not leave Build Settings pointing to deleted ViSNET_XR_Assignment scene.
+Do not create two EventSystems.
+Do not create two Input Action Managers.
+Do not forget Tracked Device Graphic Raycaster on the canvas.
+Do not forget to disable ProjectButtonTemplate and FloorButtonTemplate.
+Do not put AppManager inside a disabled UI panel.
+Do not forget to save MainScene before testing or committing.
 ```
 
 ## Test Order
