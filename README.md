@@ -76,7 +76,7 @@ UGUI
 URP
 ```
 
-Meta XR SDK can remain installed for Quest simulator/support tooling, but the assignment app should be presented as an OpenXR + Unity XR Interaction Toolkit implementation.
+The assignment app is presented as an OpenXR + Unity XR Interaction Toolkit implementation.
 
 Main implementation folders:
 
