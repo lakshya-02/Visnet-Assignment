@@ -1,10 +1,8 @@
 # Unity Manual Scene Hierarchy and Inspector Setup
 
-Use this for a clean OpenXR + Unity XR Interaction Toolkit scene. The goal is a polished VR dashboard, not a generated scene.
+This guide assumes the hierarchy is empty and you are rebuilding the Unity scene manually with OpenXR + Unity XR Interaction Toolkit.
 
 ## Required Packages
-
-Keep these installed:
 
 ```text
 OpenXR Plugin                         com.unity.xr.openxr
@@ -16,86 +14,130 @@ UGUI / Unity UI                       com.unity.ugui
 Universal Render Pipeline             com.unity.render-pipelines.universal
 ```
 
-Meta XR SDK has been removed. If needed later, reinstall it only for simulator/support tooling.
+## Build Order
+
+1. Import XRI Starter Assets and XR Device Simulator.
+2. Add XR Origin, XR Interaction Manager, Input Action Manager, and EventSystem.
+3. Add WorldSpaceCanvas.
+4. Build Login, Project List, Floor Selection, Summary, and Toast panels.
+5. Add AppManager and wire all script references.
+6. Test UI with mouse first, then XR ray, then APK.
 
 ## Scene Hierarchy
 
-Create or rename your main scene as:
-
-```text
-Assets/Scenes/MainScene.unity
-```
-
-Recommended hierarchy:
-
 ```text
 MainScene
-├── XR Origin (XR Rig)
-│   ├── Camera Offset
-│   │   ├── Main Camera
-│   │   ├── Left Controller
-│   │   │   ├── XR Ray Interactor
-│   │   │   └── XR Interactor Line Visual
-│   │   └── Right Controller
-│   │       ├── XR Ray Interactor
-│   │       └── XR Interactor Line Visual
-│   └── XR Interaction Manager
-├── EventSystem
-├── WorldSpaceCanvas
-│   ├── SafeArea
-│   │   ├── LoginPanel
-│   │   ├── ProjectListPanel
-│   │   ├── FloorSelectionPanel
-│   │   ├── SummaryPanel
-│   │   └── ToastPanel
-├── AppManager
-└── Environment
-    ├── Directional Light
-    ├── Backdrop Plane
-    └── Accent Glow Panels
+|-- XR Origin (XR Rig)
+|   |-- Camera Offset
+|   |   |-- Main Camera
+|   |   |-- Left Controller
+|   |   |   |-- Ray Origin
+|   |   |   |-- XR Ray Interactor
+|   |   |   |-- XR Interactor Line Visual
+|   |   |-- Right Controller
+|   |       |-- Ray Origin
+|   |       |-- XR Ray Interactor
+|   |       |-- XR Interactor Line Visual
+|-- XR Interaction Manager
+|-- Input Action Manager
+|-- EventSystem
+|-- WorldSpaceCanvas
+|   |-- SafeArea
+|       |-- LoginPanel
+|       |-- ProjectListPanel
+|       |-- FloorSelectionPanel
+|       |-- SummaryPanel
+|       |-- ToastPanel
+|-- AppManager
+|-- Environment
 ```
 
-## XR Origin
+## Input Action Manager
 
-Add through:
+Create empty GameObject:
 
 ```text
-GameObject > XR > XR Origin (Action-based)
+Input Action Manager
+```
+
+Add component:
+
+```text
+Input Action Manager
 ```
 
 Inspector:
 
 ```text
-XR Origin
-Tracking Origin Mode: Floor
-Camera Y Offset: 0
+Action Assets Size: 1
+Element 0: XRI Default Input Actions
 ```
 
-For each controller:
+Use:
 
 ```text
-XR Controller (Action-based)
-XR Ray Interactor
-XR Interactor Line Visual
-Line Renderer
+Assets/Samples/XR Interaction Toolkit/3.0.10/Starter Assets/XRI Default Input Actions.inputactions
 ```
 
-Ray settings:
+## XR Ray Interactor
+
+For left controller:
 
 ```text
-XR Ray Interactor
-Line Type: Straight Line
-Max Raycast Distance: 10
-Hit Detection Type: Raycast
-Enable UI Interaction: On
+Interaction Manager: XR Interaction Manager
+Interaction Layer Mask: Everything
+Handedness: Left
+UI Interaction: On
+Block UI on Interactable: On
+Ray Origin Transform: Left Controller/Ray Origin
 ```
 
-Line visual:
+For right controller:
 
 ```text
-Valid Color Gradient: Blue to transparent
-Invalid Color Gradient: White/gray to transparent
-Line Width: 0.006 to 0.012
+Interaction Manager: XR Interaction Manager
+Interaction Layer Mask: Everything
+Handedness: Right
+UI Interaction: On
+Block UI on Interactable: On
+Ray Origin Transform: Right Controller/Ray Origin
+```
+
+If fields are empty:
+
+```text
+UI Press Input:
+Left  -> XRI Left Interaction / UI Press
+Right -> XRI Right Interaction / UI Press
+
+UI Scroll Input:
+Left  -> XRI Left Interaction / UI Scroll
+Right -> XRI Right Interaction / UI Scroll
+```
+
+## XR Interactor Line Visual
+
+```text
+Line Width: 0.005
+Override Line Origin: On
+Line Origin Transform: same Ray Origin object
+Set Line Color Gradient: On
+Override Line Length: On
+Line Length: 10
+Stop Line At First Raycast Hit: On
+Stop Line At Selection: Off
+Smooth Movement: On
+Snap Endpoint If Available: On
+Line Bend Ratio: 0.25
+Reticle: None
+```
+
+Colors:
+
+```text
+Valid Gradient: #5B8CFF alpha 1 -> #5B8CFF alpha 0
+Invalid Gradient: #AEB4C2 alpha 0.5 -> #AEB4C2 alpha 0
+Blocked Gradient: #FF5C7A alpha 0.8 -> #FF5C7A alpha 0
 ```
 
 ## EventSystem
@@ -105,48 +147,50 @@ Use:
 ```text
 EventSystem
 Input System UI Input Module
-XR UI Input Module if available in your XRI setup
 ```
 
-If XR UI clicks do not work, check:
+If XR UI clicks do not work, add/use:
+
+```text
+XR UI Input Module
+```
+
+Also check:
 
 ```text
 WorldSpaceCanvas has Tracked Device Graphic Raycaster
-XR Ray Interactor has Enable UI Interaction enabled
-EventSystem is using Input System / XR UI input
+XR Ray Interactor has UI Interaction enabled
+Input Action Manager has XRI Default Input Actions
 ```
 
 ## WorldSpaceCanvas
 
-Create:
-
-```text
-GameObject > UI > Canvas
-```
-
-Inspector:
-
 ```text
 Render Mode: World Space
-Position: X 0, Y 1.45, Z 2.0
-Rotation: X 0, Y 0, Z 0
-Scale: X 0.0017, Y 0.0017, Z 0.0017
 Width: 1200
 Height: 820
-Graphic Raycaster: enabled
-Tracked Device Graphic Raycaster: add if available
+Position: X 0, Y 1.45, Z 2
+Rotation: X 0, Y 0, Z 0
+Scale: X 0.0017, Y 0.0017, Z 0.0017
+```
+
+Components:
+
+```text
+Canvas
+Canvas Scaler
+Graphic Raycaster
+Tracked Device Graphic Raycaster
 ```
 
 Canvas Scaler:
 
 ```text
 UI Scale Mode: Constant Pixel Size
-Dynamic Pixels Per Unit: 10 to 12
+Dynamic Pixels Per Unit: 10
 ```
 
 ## Visual Style
-
-Use this consistent style:
 
 ```text
 Background: #05070C
@@ -159,279 +203,221 @@ Success: #57D68D
 Error: #FF5C7A
 ```
 
-Panel sizing:
+Sizing:
 
 ```text
 Main panel width: 850-950
 Main panel height: 560-650
-Corner radius: 18-28
 Button height: 64-76
 Input height: 64-76
-Text size title: 44-52
-Text size body/buttons: 24-30
+Title text: 44-52
+Body/button text: 24-30
 ```
 
-Make panels feel spatial:
-
-```text
-Add subtle shadow image behind each panel
-Use 1 large floating panel, not many small cards
-Keep all controls inside readable central area
-Use blue selected state for active project/floor
-```
-
-## UI Panel Details
-
-### LoginPanel
-
-Hierarchy:
+## LoginPanel
 
 ```text
 LoginPanel
-├── TitleText                 "ViSNET XR"
-├── SubtitleText              "Project access portal"
-├── UsernameInput
-├── PasswordInput
-├── LoginButton
-└── StatusText
+|-- TitleText                 "ViSNET XR"
+|-- SubtitleText              "Project access portal"
+|-- UsernameInput
+|-- PasswordInput
+|-- LoginButton
+|-- StatusText
 ```
 
-Inspector:
+Attach:
 
 ```text
-LoginPanel: add LoginUI
-LoginUI.panel: LoginPanel
-LoginUI.usernameInput: UsernameInput
-LoginUI.passwordInput: PasswordInput
-LoginUI.loginButton: LoginButton
-LoginUI.statusText: StatusText
+LoginPanel -> LoginUI
 ```
 
-Input placeholders:
+Wire:
 
 ```text
-UsernameInput placeholder: Username
-PasswordInput placeholder: Password
-PasswordInput Content Type: Password
+panel: LoginPanel
+usernameInput: UsernameInput
+passwordInput: PasswordInput
+loginButton: LoginButton
+statusText: StatusText
 ```
 
-Optional default text for testing:
-
-```text
-UsernameInput: testuser
-PasswordInput: 123456
-```
-
-### ProjectListPanel
-
-Hierarchy:
+## ProjectListPanel
 
 ```text
 ProjectListPanel
-├── TitleText                 "Select Project"
-├── StatusText
-├── ProjectListRoot
-│   └── ProjectButtonTemplate
-└── BackButton                "Logout"
+|-- TitleText                 "Select Project"
+|-- StatusText
+|-- ProjectListRoot
+|   |-- ProjectButtonTemplate
+|-- BackButton                "Logout"
 ```
 
-Inspector:
+Attach:
 
 ```text
-ProjectListPanel: add ProjectListUI
-ProjectListUI.panel: ProjectListPanel
-ProjectListUI.listRoot: ProjectListRoot
-ProjectListUI.itemButtonTemplate: ProjectButtonTemplate
-ProjectListUI.backButton: BackButton
-ProjectListUI.statusText: StatusText
+ProjectListPanel -> ProjectListUI
+```
+
+Wire:
+
+```text
+panel: ProjectListPanel
+listRoot: ProjectListRoot
+itemButtonTemplate: ProjectButtonTemplate
+backButton: BackButton
+statusText: StatusText
 ```
 
 Important:
 
 ```text
-ProjectButtonTemplate should be disabled in the scene
-ProjectButtonTemplate must contain a TMP_Text child
-ProjectListRoot should use Vertical Layout Group
+ProjectButtonTemplate: disabled in scene
+ProjectButtonTemplate: must contain TMP_Text child
+ProjectListRoot: Vertical Layout Group
 ```
 
-### FloorSelectionPanel
-
-Hierarchy:
+## FloorSelectionPanel
 
 ```text
 FloorSelectionPanel
-├── ProjectTitleText
-├── SubtitleText              "Select a floor"
-├── StatusText
-├── FloorListRoot
-│   └── FloorButtonTemplate
-├── ContinueButton            "Continue"
-└── BackButton                "Back"
+|-- ProjectTitleText
+|-- SubtitleText              "Select a floor"
+|-- StatusText
+|-- FloorListRoot
+|   |-- FloorButtonTemplate
+|-- ContinueButton            "Continue"
+|-- BackButton                "Back"
 ```
 
-Inspector:
+Attach:
 
 ```text
-FloorSelectionPanel: add FloorDropdownUI
-FloorDropdownUI.panel: FloorSelectionPanel
-FloorDropdownUI.projectTitle: ProjectTitleText
-FloorDropdownUI.listRoot: FloorListRoot
-FloorDropdownUI.itemButtonTemplate: FloorButtonTemplate
-FloorDropdownUI.continueButton: ContinueButton
-FloorDropdownUI.backButton: BackButton
-FloorDropdownUI.statusText: StatusText
+FloorSelectionPanel -> FloorDropdownUI
+```
+
+Wire:
+
+```text
+panel: FloorSelectionPanel
+projectTitle: ProjectTitleText
+listRoot: FloorListRoot
+itemButtonTemplate: FloorButtonTemplate
+continueButton: ContinueButton
+backButton: BackButton
+statusText: StatusText
 ```
 
 Important:
 
 ```text
-FloorButtonTemplate should be disabled in the scene
-ContinueButton can start disabled
-FloorListRoot should use Vertical Layout Group
+FloorButtonTemplate: disabled in scene
+FloorButtonTemplate: must contain TMP_Text child
+FloorListRoot: Vertical Layout Group
+ContinueButton: can start disabled
 ```
 
-### SummaryPanel
-
-Hierarchy:
+## SummaryPanel
 
 ```text
 SummaryPanel
-├── TitleText                 "Configuration Complete"
-├── UserText
-├── ProjectText
-├── FloorText
-├── StatusText
-├── BackButton                "Back"
-└── RestartButton             "Start Again"
+|-- TitleText                 "Configuration Complete"
+|-- UserText
+|-- ProjectText
+|-- FloorText
+|-- StatusText
+|-- BackButton                "Back"
+|-- RestartButton             "Start Again"
 ```
 
-Inspector:
+Attach:
 
 ```text
-SummaryPanel: add SummaryUI
-SummaryUI.panel: SummaryPanel
-SummaryUI.userText: UserText
-SummaryUI.projectText: ProjectText
-SummaryUI.floorText: FloorText
-SummaryUI.statusText: StatusText
-SummaryUI.backButton: BackButton
-SummaryUI.restartButton: RestartButton
+SummaryPanel -> SummaryUI
 ```
 
-### ToastPanel
+Wire:
 
-Hierarchy:
+```text
+panel: SummaryPanel
+userText: UserText
+projectText: ProjectText
+floorText: FloorText
+statusText: StatusText
+backButton: BackButton
+restartButton: RestartButton
+```
+
+## ToastPanel
 
 ```text
 ToastPanel
-├── BackgroundImage
-└── ToastText
+|-- BackgroundImage
+|-- ToastText
 ```
 
-Inspector:
+Attach:
 
 ```text
-ToastPanel: add CanvasGroup
-ToastPanel: add ToastUI
-ToastUI.canvasGroup: ToastPanel CanvasGroup
-ToastUI.label: ToastText
-Visible Seconds: 2.2
-Fade Seconds: 0.25
+ToastPanel -> CanvasGroup
+ToastPanel -> ToastUI
 ```
 
-Place ToastPanel:
+Wire:
 
 ```text
-Anchored Position: X 0, Y -310
-Width: 600-700
-Height: 64-76
+canvasGroup: ToastPanel CanvasGroup
+label: ToastText
+visibleSeconds: 2.2
+fadeSeconds: 0.25
 ```
 
-## AppManager Wiring
-
-Create empty object:
+## AppManager
 
 ```text
 AppManager
+|-- APIManager
+|-- AuthAPI
+|-- ProjectAPI
+|-- SessionManager
+|-- NavigationManager
+|-- ManualXrAppController
 ```
 
-Add these components:
-
-```text
-APIManager
-AuthAPI
-ProjectAPI
-SessionManager
-NavigationManager
-ManualXrAppController
-```
-
-ManualXrAppController Inspector:
-
-```text
-Auth API: AuthAPI component
-Project API: ProjectAPI component
-Session Manager: SessionManager component
-Navigation Manager: NavigationManager component
-Login UI: LoginPanel/LoginUI
-Project List UI: ProjectListPanel/ProjectListUI
-Floor Dropdown UI: FloorSelectionPanel/FloorDropdownUI
-Summary UI: SummaryPanel/SummaryUI
-Toast UI: ToastPanel/ToastUI
-```
-
-AuthAPI and ProjectAPI:
+AuthAPI:
 
 ```text
 API Manager: AppManager/APIManager
 ```
 
-## Backend URL
-
-The Unity API config is:
+ProjectAPI:
 
 ```text
-Assets/Scripts/API/APIConfig.cs
+API Manager: AppManager/APIManager
 ```
 
-Current URL:
+ManualXrAppController:
 
 ```text
-https://visnet-assignment.vercel.app
+Auth API: AuthAPI
+Project API: ProjectAPI
+Session Manager: SessionManager
+Navigation Manager: NavigationManager
+Login UI: LoginUI
+Project List UI: ProjectListUI
+Floor Dropdown UI: FloorDropdownUI
+Summary UI: SummaryUI
+Toast UI: ToastUI
 ```
 
-## Build Settings
-
-Use:
+## Test Order
 
 ```text
-Platform: Android
-Texture Compression: ASTC
-Minimum API Level: Android 10 or higher
-Scripting Backend: IL2CPP
-Target Architectures: ARM64
-XR Plug-in Management: OpenXR enabled
-```
-
-## Final Play Test
-
-Test in this order:
-
-```text
-Editor Play Mode: login and API calls
-XR Device Simulator: ray interaction
-Quest APK: final hardware test
-```
-
-Required flow:
-
-```text
-Login with testuser / 123456
-Project list loads
-Project selection opens floors
-Floor options change by project
-Floor selection highlights
-Summary screen shows user/project/floor
-Back buttons work
-Toast messages fade
+1. Play Mode: click LoginButton with mouse
+2. Play Mode: login with testuser / 123456
+3. Confirm project API loads
+4. Confirm floors load after selecting a project
+5. Confirm summary screen updates
+6. Test XR ray hover/click
+7. Build APK and test on Quest
 ```

@@ -1,17 +1,37 @@
 # ViSNET Meta Quest XR Assignment
 
-This repository contains a Unity XR application and a Vercel-ready backend for the ViSNET Meta Quest development task.
+Unity XR assignment project for a Meta Quest-style application with login, project listing, dynamic floor selection, backend API integration, XR ray interaction, toast feedback, and a final summary screen.
 
-## What It Builds
+The project is built as:
 
-The app presents a Meta Quest-style world-space UI where a user can:
+```text
+Unity Quest APK
+  -> UnityWebRequest
+Vercel Serverless Backend
+```
 
-1. Log in with demo credentials.
-2. Load projects from a backend API.
-3. Select a project.
-4. Load floors dynamically for that project.
-5. Select a floor.
-6. Review a final summary screen.
+The Unity application is not deployed to Vercel. Vercel hosts only the backend APIs.
+
+## Current Stack
+
+```text
+Unity: 6000.0.70f1
+XR Runtime: OpenXR
+Interaction: Unity XR Interaction Toolkit
+Input: Unity Input System
+UI: UGUI + TextMeshPro
+Rendering: URP
+Backend: Next.js API routes on Vercel
+```
+
+Meta XR SDK has been removed. The app should be presented as an **OpenXR + Unity XR Interaction Toolkit** implementation.
+
+## Live Links
+
+```text
+Backend URL: https://visnet-assignment.vercel.app
+GitHub: https://github.com/lakshya-02/Visnet-Assignment
+```
 
 ## Demo Credentials
 
@@ -20,15 +40,244 @@ Username: testuser
 Password: 123456
 ```
 
-## Backend
-
-Backend folder:
+## Required Backend APIs
 
 ```text
-backend/
+POST /api/login
+GET /api/projects
+GET /api/projects/{id}/floors
 ```
 
-Local commands:
+Test URLs:
+
+```text
+https://visnet-assignment.vercel.app/api/projects
+https://visnet-assignment.vercel.app/api/projects/1/floors
+```
+
+Unity backend config:
+
+```text
+Assets/Scripts/API/APIConfig.cs
+```
+
+## Important Folders
+
+```text
+Assets/Scripts/API        UnityWebRequest API clients and response models
+Assets/Scripts/Managers   Session and panel navigation state
+Assets/Scripts/UI         UI binding scripts and app controller
+backend/                  Vercel/Next.js backend
+docs/                     Report and manual scene hierarchy guide
+```
+
+## Start From Empty Hierarchy
+
+If the Unity hierarchy is empty, rebuild it manually in this order.
+
+### 1. Import XRI Samples
+
+In Unity:
+
+```text
+Window > Package Manager > XR Interaction Toolkit > Samples
+```
+
+Import:
+
+```text
+Starter Assets
+XR Device Simulator
+```
+
+After import, you should have:
+
+```text
+Assets/Samples/XR Interaction Toolkit/3.0.10/Starter Assets
+Assets/Samples/XR Interaction Toolkit/3.0.10/XR Device Simulator
+```
+
+### 2. Create Core XR Objects
+
+Create:
+
+```text
+XR Origin (XR Rig)
+XR Interaction Manager
+Input Action Manager
+EventSystem
+WorldSpaceCanvas
+AppManager
+Environment
+```
+
+For `Input Action Manager`:
+
+```text
+Action Assets Size: 1
+Element 0: XRI Default Input Actions
+```
+
+Use the input actions from:
+
+```text
+Assets/Samples/XR Interaction Toolkit/3.0.10/Starter Assets/XRI Default Input Actions.inputactions
+```
+
+### 3. Recommended Scene Hierarchy
+
+```text
+MainScene
+|-- XR Origin (XR Rig)
+|   |-- Camera Offset
+|   |   |-- Main Camera
+|   |   |-- Left Controller
+|   |   |   |-- XR Ray Interactor
+|   |   |   |-- XR Interactor Line Visual
+|   |   |-- Right Controller
+|   |       |-- XR Ray Interactor
+|   |       |-- XR Interactor Line Visual
+|-- XR Interaction Manager
+|-- Input Action Manager
+|-- EventSystem
+|-- WorldSpaceCanvas
+|   |-- SafeArea
+|       |-- LoginPanel
+|       |-- ProjectListPanel
+|       |-- FloorSelectionPanel
+|       |-- SummaryPanel
+|       |-- ToastPanel
+|-- AppManager
+|-- Environment
+```
+
+Full Inspector setup is documented in:
+
+```text
+docs/Unity_Manual_Scene_Hierarchy.md
+```
+
+## World Space Canvas Values
+
+```text
+Render Mode: World Space
+Width: 1200
+Height: 820
+Position: X 0, Y 1.45, Z 2
+Rotation: X 0, Y 0, Z 0
+Scale: X 0.0017, Y 0.0017, Z 0.0017
+```
+
+Canvas components:
+
+```text
+Canvas
+Canvas Scaler
+Graphic Raycaster
+Tracked Device Graphic Raycaster
+```
+
+Canvas Scaler:
+
+```text
+UI Scale Mode: Constant Pixel Size
+Dynamic Pixels Per Unit: 10
+```
+
+## UI Panels To Create
+
+Create these panels under `WorldSpaceCanvas/SafeArea`:
+
+```text
+LoginPanel
+ProjectListPanel
+FloorSelectionPanel
+SummaryPanel
+ToastPanel
+```
+
+Attach scripts:
+
+```text
+LoginPanel -> LoginUI
+ProjectListPanel -> ProjectListUI
+FloorSelectionPanel -> FloorDropdownUI
+SummaryPanel -> SummaryUI
+ToastPanel -> ToastUI + CanvasGroup
+```
+
+## AppManager Setup
+
+Create an empty GameObject:
+
+```text
+AppManager
+```
+
+Add components:
+
+```text
+APIManager
+AuthAPI
+ProjectAPI
+SessionManager
+NavigationManager
+ManualXrAppController
+```
+
+In `AuthAPI`:
+
+```text
+API Manager: AppManager / APIManager
+```
+
+In `ProjectAPI`:
+
+```text
+API Manager: AppManager / APIManager
+```
+
+In `ManualXrAppController`, wire:
+
+```text
+Auth API
+Project API
+Session Manager
+Navigation Manager
+Login UI
+Project List UI
+Floor Dropdown UI
+Summary UI
+Toast UI
+```
+
+## UI Style
+
+Use a clean Meta Quest-inspired VR dashboard style:
+
+```text
+Background: #05070C
+Main Panel: #101216 with 88-94% alpha
+Panel Border: #2F3440
+Primary Blue: #5B8CFF
+Text: #FFFFFF
+Muted Text: #AEB4C2
+Success: #57D68D
+Error: #FF5C7A
+```
+
+Recommended sizes:
+
+```text
+Main panel width: 850-950
+Main panel height: 560-650
+Button height: 64-76
+Input height: 64-76
+Title text: 44-52
+Button/body text: 24-30
+```
+
+## Backend Development
 
 ```bash
 cd backend
@@ -38,99 +287,39 @@ npm test
 npm run build
 ```
 
-Required API endpoints:
-
-```text
-POST /api/login
-GET /api/projects
-GET /api/projects/{id}/floors
-```
-
-After deploying the backend to Vercel, update:
-
-```text
-Assets/Scripts/API/APIConfig.cs
-```
-
-with the deployed backend URL.
-
-The Unity app is not deployed to Vercel. Vercel hosts only the backend API. The Quest app is built directly from Unity as an Android APK.
-
-## Unity XR App
-
-Unity version used:
-
-```text
-Unity 6000.0.70f1
-```
-
-Important packages:
-
-```text
-OpenXR
-Unity XR Interaction Toolkit
-XR Management
-Unity Input System
-TextMeshPro
-UGUI
-URP
-```
-
-The assignment app is presented as an OpenXR + Unity XR Interaction Toolkit implementation.
-
-Main implementation folders:
-
-```text
-Assets/Scripts/API
-Assets/Scripts/Managers
-Assets/Scripts/UI
-```
-
-Recommended manual scene setup:
-
-```text
-OpenXR + Unity XR Interaction Toolkit
-XR Origin / XR Rig
-Left and right XR Ray Interactors
-EventSystem with XR UI Input Module
-World-space Canvas
-LoginPanel
-ProjectListPanel
-FloorSelectionPanel
-SummaryPanel
-ToastPanel
-```
-
-Create the scene manually using Unity XR Interaction Toolkit components, then wire the panel references into `ManualXrAppController`.
-
-## Premium UI Direction
-
-The UI uses:
-
-```text
-Dark translucent floating panels
-Large VR-readable typography
-Blue selected states
-Rounded inputs and buttons
-Hover/pressed feedback
-XR world-space toast notifications
-Final configuration summary screen
-```
+Deploy the `backend` folder to Vercel.
 
 ## Final Testing Checklist
 
 ```text
-Correct login opens project list
-Wrong login shows invalid credentials toast
-Projects load from backend API
-Project selection loads dynamic floors
-Floor selection highlights the selected floor
+Login with testuser / 123456 works
+Invalid login shows toast
+Projects load from Vercel API
+Project selection loads floors dynamically
+Floor selection highlights selected floor
 Summary screen shows user, project, and floor
 Back navigation works
-Controller/ray interaction works in XR
-Backend tests pass
-Backend production build passes
+XR ray can hover and click UI
+Toast fades out
 APK builds for Android/Quest
+```
+
+## Build APK
+
+Unity build settings:
+
+```text
+Platform: Android
+Texture Compression: ASTC
+Scripting Backend: IL2CPP
+Target Architecture: ARM64
+XR Plug-in Management: OpenXR enabled
+```
+
+Output:
+
+```text
+ViSNET_Meta_Quest_XR.apk
 ```
 
 ## AI Usage Disclosure
