@@ -132,11 +132,7 @@ MainScene
 |   |-- Camera Offset
 |   |   |-- Main Camera
 |   |   |-- Left Controller
-|   |   |   |-- XR Ray Interactor
-|   |   |   |-- XR Interactor Line Visual
 |   |   |-- Right Controller
-|   |       |-- XR Ray Interactor
-|   |       |-- XR Interactor Line Visual
 |-- XR Interaction Manager
 |-- Input Action Manager
 |-- EventSystem
@@ -182,6 +178,8 @@ Canvas Scaler:
 UI Scale Mode: Constant Pixel Size
 Dynamic Pixels Per Unit: 10
 ```
+
+Use the XRI 3 Starter Assets `XR Origin (XR Rig)` prefab as-is. Do not manually add old `XR Ray Interactor` or `XR Interactor Line Visual` components. For UI clicking, the important object is the canvas: it must have `Canvas`, `Canvas Scaler`, `Graphic Raycaster`, and `Tracked Device Graphic Raycaster`.
 
 ## UI Panels To Create
 

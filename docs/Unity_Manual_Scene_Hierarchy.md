@@ -70,13 +70,7 @@ MainScene
 |   |-- Camera Offset
 |   |   |-- Main Camera
 |   |   |-- Left Controller
-|   |   |   |-- Ray Origin
-|   |   |   |-- XR Ray Interactor
-|   |   |   |-- XR Interactor Line Visual
 |   |   |-- Right Controller
-|   |       |-- Ray Origin
-|   |       |-- XR Ray Interactor
-|   |       |-- XR Interactor Line Visual
 |-- XR Interaction Manager
 |-- Input Action Manager
 |-- EventSystem
@@ -119,66 +113,34 @@ Assets/Samples/XR Interaction Toolkit/3.0.10/Starter Assets/XRI Default Input Ac
 
 If `Input Action Manager` already exists, only verify that `XRI Default Input Actions` is assigned. Do not create a duplicate.
 
-## XR Ray Interactor
+## XR Origin and Controller Setup
 
-For left controller:
-
-```text
-Interaction Manager: XR Interaction Manager
-Interaction Layer Mask: Everything
-Handedness: Left
-UI Interaction: On
-Block UI on Interactable: On
-Ray Origin Transform: Left Controller/Ray Origin
-```
-
-For right controller:
+Use the imported XRI Starter Assets prefab:
 
 ```text
-Interaction Manager: XR Interaction Manager
-Interaction Layer Mask: Everything
-Handedness: Right
-UI Interaction: On
-Block UI on Interactable: On
-Ray Origin Transform: Right Controller/Ray Origin
+Assets/Samples/XR Interaction Toolkit/3.0.10/Starter Assets/Prefabs/XR Origin (XR Rig).prefab
 ```
 
-If fields are empty:
+Do not manually add old `XR Ray Interactor` or `XR Interactor Line Visual` components. The XRI 3 Starter Assets rig already contains the correct controller/interactor setup.
+
+Verify on the XR Origin:
 
 ```text
-UI Press Input:
-Left  -> XRI Left Interaction / UI Press
-Right -> XRI Right Interaction / UI Press
-
-UI Scroll Input:
-Left  -> XRI Left Interaction / UI Scroll
-Right -> XRI Right Interaction / UI Scroll
+Tracking Origin Mode: Floor
+Camera Y Offset: 0
+Main Camera exists under Camera Offset
 ```
 
-## XR Interactor Line Visual
+If controller UI clicks do not work, check these first:
 
 ```text
-Line Width: 0.005
-Override Line Origin: On
-Line Origin Transform: same Ray Origin object
-Set Line Color Gradient: On
-Override Line Length: On
-Line Length: 10
-Stop Line At First Raycast Hit: On
-Stop Line At Selection: Off
-Smooth Movement: On
-Snap Endpoint If Available: On
-Line Bend Ratio: 0.25
-Reticle: None
+Input Action Manager has XRI Default Input Actions
+EventSystem exists
+WorldSpaceCanvas has Tracked Device Graphic Raycaster
+Canvas Render Mode is World Space
 ```
 
-Colors:
-
-```text
-Valid Gradient: #5B8CFF alpha 1 -> #5B8CFF alpha 0
-Invalid Gradient: #AEB4C2 alpha 0.5 -> #AEB4C2 alpha 0
-Blocked Gradient: #FF5C7A alpha 0.8 -> #FF5C7A alpha 0
-```
+If the prefab has `Near-Far Interactor` components, leave them enabled. They replace the older manual ray setup in XRI 3.
 
 ## EventSystem
 
@@ -199,7 +161,6 @@ Also check:
 
 ```text
 WorldSpaceCanvas has Tracked Device Graphic Raycaster
-XR Ray Interactor has UI Interaction enabled
 Input Action Manager has XRI Default Input Actions
 ```
 
@@ -215,6 +176,8 @@ Then set:
 
 ```text
 Render Mode: World Space
+Event Camera: Main Camera
+Plane Distance: 1
 Width: 1200
 Height: 820
 Position: X 0, Y 1.45, Z 2
@@ -235,7 +198,33 @@ Canvas Scaler:
 
 ```text
 UI Scale Mode: Constant Pixel Size
+Scale Factor: 1
+Reference Pixels Per Unit: 100
 Dynamic Pixels Per Unit: 10
+```
+
+Graphic Raycaster:
+
+```text
+Ignore Reversed Graphics: On
+Blocking Objects: None
+Blocking Mask: Everything
+```
+
+Tracked Device Graphic Raycaster:
+
+```text
+Ignore Reversed Graphics: On
+Check For 2D Occlusion: Off
+Check For 3D Occlusion: Off
+Blocking Mask: Everything
+Raycast Trigger Interaction: Use Global
+```
+
+If you cannot find this component, use Add Component search:
+
+```text
+Tracked Device Graphic Raycaster
 ```
 
 Hierarchy under canvas:
@@ -565,6 +554,7 @@ Do not leave Build Settings pointing to deleted ViSNET_XR_Assignment scene.
 Do not create two EventSystems.
 Do not create two Input Action Managers.
 Do not forget Tracked Device Graphic Raycaster on the canvas.
+Do not manually add old XR Ray Interactor or Line Visual components when using the XRI 3 Starter Assets rig.
 Do not forget to disable ProjectButtonTemplate and FloorButtonTemplate.
 Do not put AppManager inside a disabled UI panel.
 Do not forget to save MainScene before testing or committing.
@@ -578,6 +568,6 @@ Do not forget to save MainScene before testing or committing.
 3. Confirm project API loads
 4. Confirm floors load after selecting a project
 5. Confirm summary screen updates
-6. Test XR ray hover/click
+6. Test XRI controller hover/click
 7. Build APK and test on Quest
 ```
