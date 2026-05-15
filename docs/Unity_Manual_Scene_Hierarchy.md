@@ -35,7 +35,6 @@ Assets/Scenes/MainScene.unity
 Still to create:
 
 ```text
-SafeArea
 LoginPanel
 ProjectListPanel
 FloorSelectionPanel
@@ -48,9 +47,9 @@ AppManager
 
 1. Rename `WorldSpace` to `WorldSpaceCanvas`.
 2. Configure `WorldSpaceCanvas` as a world-space canvas.
-3. Add `SafeArea` under `WorldSpaceCanvas`.
-4. Create `LoginPanel`, `ProjectListPanel`, `FloorSelectionPanel`, `SummaryPanel`, and `ToastPanel`.
-5. Add `AppManager` and attach API/session/navigation/controller scripts.
+3. Create all UI panels directly under `WorldSpaceCanvas`.
+4. Create `AppManager`.
+5. Add app scripts to `AppManager`.
 6. Wire all Inspector references.
 7. Test with mouse first, then XR ray, then APK.
 
@@ -82,12 +81,11 @@ MainScene
 |-- Input Action Manager
 |-- EventSystem
 |-- WorldSpaceCanvas
-|   |-- SafeArea
-|       |-- LoginPanel
-|       |-- ProjectListPanel
-|       |-- FloorSelectionPanel
-|       |-- SummaryPanel
-|       |-- ToastPanel
+|   |-- LoginPanel
+|   |-- ProjectListPanel
+|   |-- FloorSelectionPanel
+|   |-- SummaryPanel
+|   |-- ToastPanel
 |-- AppManager
 |-- Environment
 ```
@@ -244,24 +242,14 @@ Hierarchy under canvas:
 
 ```text
 WorldSpaceCanvas
-|-- SafeArea
-    |-- LoginPanel
-    |-- ProjectListPanel
-    |-- FloorSelectionPanel
-    |-- SummaryPanel
-    |-- ToastPanel
+|-- LoginPanel
+|-- ProjectListPanel
+|-- FloorSelectionPanel
+|-- SummaryPanel
+|-- ToastPanel
 ```
 
-`SafeArea` RectTransform:
-
-```text
-Anchor Min: X 0.5, Y 0.5
-Anchor Max: X 0.5, Y 0.5
-Pivot: X 0.5, Y 0.5
-Width: 900
-Height: 620
-Position: X 0, Y 0, Z 0
-```
+Do not create any extra wrapper object between the canvas and panels.
 
 ## Visual Style
 
@@ -305,6 +293,9 @@ Panel RectTransform:
 Width: 850
 Height: 560
 Position: X 0, Y 0
+Anchor Min: X 0.5, Y 0.5
+Anchor Max: X 0.5, Y 0.5
+Pivot: X 0.5, Y 0.5
 ```
 
 Recommended layout:
@@ -354,6 +345,9 @@ Panel RectTransform:
 Width: 850
 Height: 560
 Position: X 0, Y 0
+Anchor Min: X 0.5, Y 0.5
+Anchor Max: X 0.5, Y 0.5
+Pivot: X 0.5, Y 0.5
 Initially Active: Off
 ```
 
@@ -400,6 +394,9 @@ Panel RectTransform:
 Width: 850
 Height: 560
 Position: X 0, Y 0
+Anchor Min: X 0.5, Y 0.5
+Anchor Max: X 0.5, Y 0.5
+Pivot: X 0.5, Y 0.5
 Initially Active: Off
 ```
 
@@ -449,6 +446,9 @@ Panel RectTransform:
 Width: 850
 Height: 560
 Position: X 0, Y 0
+Anchor Min: X 0.5, Y 0.5
+Anchor Max: X 0.5, Y 0.5
+Pivot: X 0.5, Y 0.5
 Initially Active: Off
 ```
 

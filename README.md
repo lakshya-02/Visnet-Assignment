@@ -141,12 +141,11 @@ MainScene
 |-- Input Action Manager
 |-- EventSystem
 |-- WorldSpaceCanvas
-|   |-- SafeArea
-|       |-- LoginPanel
-|       |-- ProjectListPanel
-|       |-- FloorSelectionPanel
-|       |-- SummaryPanel
-|       |-- ToastPanel
+|   |-- LoginPanel
+|   |-- ProjectListPanel
+|   |-- FloorSelectionPanel
+|   |-- SummaryPanel
+|   |-- ToastPanel
 |-- AppManager
 |-- Environment
 ```
@@ -186,7 +185,7 @@ Dynamic Pixels Per Unit: 10
 
 ## UI Panels To Create
 
-Create these panels under `WorldSpaceCanvas/SafeArea`:
+Create these panels directly under `WorldSpaceCanvas`:
 
 ```text
 LoginPanel
