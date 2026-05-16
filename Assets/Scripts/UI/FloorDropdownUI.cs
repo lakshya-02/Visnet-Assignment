@@ -11,7 +11,10 @@ namespace VisnetXR.UI
         public RectTransform listRoot;
         public Button itemButtonTemplate;
         public Button backButton;
+        public Button backToProjectsButton;
+        public Button logoutButton;
         public Button continueButton;
+        public TMP_Text selectedFloorText;
         public TMP_Text statusText;
     }
 }

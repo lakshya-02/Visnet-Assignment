@@ -18,7 +18,7 @@
 \titleformat{\section}{\large\bfseries\color{darkink}}{}{0em}{}[\titlerule]
 \setlist[itemize]{leftmargin=1.2em}
 
-\title{\textbf{ViSNET Meta Quest XR Application}\\Submission Report}
+\title{\textbf{Assignment Report}\\ViSNET Meta Quest XR Application}
 \author{Lakshya}
 \date{May 2026}
 
@@ -37,6 +37,7 @@ This project implements a Meta Quest XR application in Unity with a login system
     \item Forward and backward navigation across login, project, floor, and summary screens.
     \item XR world-space UI suitable for controller ray interaction.
     \item Toast notifications for success, failure, selected project, and selected floor.
+    \item Optional dark/light visual theme support for final UI polish.
     \item Organized Unity scripts and a Vercel-ready backend folder.
 \end{itemize}
 
@@ -48,9 +49,15 @@ The solution is split into two main parts:
     \item \textbf{Vercel Backend}: Provides serverless API routes using a minimal Next.js application with hardcoded assignment data.
 \end{itemize}
 
-The Unity application calls the deployed backend URL configured in \texttt{Assets/Scripts/API/APIConfig.cs}. The application stores the login token, user, selected project, and selected floor in a session manager.
+The Unity application calls the deployed backend URL configured in \path{Assets/Scripts/API/APIConfig.cs}. The application stores the login token, user, selected project, and selected floor in a session manager.
 
 \section{Backend API Documentation}
+The assignment requires one demo credential set. The implemented credential is:
+\begin{verbatim}
+username: testuser
+password: 123456
+\end{verbatim}
+
 \subsection*{POST /api/login}
 Request:
 \begin{verbatim}
@@ -79,52 +86,57 @@ Returns four selectable projects: Project A, Project B, Project C, and Project D
 Returns floors for the selected project. Each project has different floor data to demonstrate dynamic dropdown behavior.
 
 \section{Unity XR Implementation}
-The Unity project uses a single-scene architecture for reliability and speed. The scene contains a runtime bootstrapper that builds the premium world-space UI, connects buttons to navigation logic, and calls the backend APIs.
+The Unity project uses a single-scene architecture for reliability and speed. The scene contains a Meta Quest-style world-space dashboard, Inspector-wired UI references, button navigation logic, and backend API calls.
 
 Core script groups:
 \begin{itemize}
     \item \texttt{Assets/Scripts/API}: API configuration, models, login API, and project API.
     \item \texttt{Assets/Scripts/Managers}: Session and navigation state.
-    \item \texttt{Assets/Scripts/UI}: Login, project list, floor dropdown, toast, and premium UI bootstrap.
-    \item \texttt{Assets/Editor}: Scene builder menu item.
+    \item \texttt{Assets/Scripts/UI}: Login, project list, floor dropdown, toast, controller feedback, and scene UI bindings.
 \end{itemize}
 
 \section{Meta Quest UI/UX Design Approach}
-The interface is designed to feel closer to a Quest-native spatial UI. It uses floating dark panels, high contrast typography, rounded buttons, blue selected states, hover/press feedback, and world-space toast notifications. The UI is readable at VR distance and avoids a flat desktop form layout.
+The interface is designed to feel closer to a Quest-native spatial UI. It uses floating panels, high contrast typography, rounded buttons, blue selected states, hover/press feedback, accent rails, status pills, and world-space toast notifications. The UI is readable at VR distance and avoids a flat desktop form layout.
+
+The visual direction uses an Inter/Roboto-style modern sans-serif approach, with TextMeshPro's default font as a safe project fallback. The world-space dashboard is positioned in front of the XR origin at a comfortable viewing distance for Quest testing. A small theme controller is included so the interface can support dark and light presentation modes without changing the backend or navigation logic.
 
 \section{AI Usage Disclosure}
-AI assistance was used for planning, UI direction, documentation structuring, and implementation guidance. The final Unity project setup, integration, testing, and submission build were reviewed and assembled by the developer.
+AI assistance was used for planning, documentation structuring, and review checklist support. The final Unity scene UI, integration, testing, and submission build were assembled and reviewed by the developer.
 
 \section{Testing Checklist}
 \begin{itemize}
     \item Correct login opens the project list.
     \item Wrong login shows an invalid credentials toast.
     \item Project list loads from the backend API.
-    \item Selecting a project loads only that project's floors.
+    \item Selecting a project highlights it, and Continue loads only that project's floors.
     \item Selecting a floor highlights the selected option.
     \item Summary screen shows user, project, and floor.
     \item Back navigation works.
     \item XR ray interaction works with controller input.
     \item Toast notifications fade correctly.
+    \item XR Origin is positioned at the scene origin and the world-space dashboard appears comfortably in front of the player.
     \item Backend tests and production build pass.
     \item APK installs and opens on a Meta Quest device or simulator.
 \end{itemize}
 
+The application must support testing through Meta XR Simulator and Meta Quest headset builds. Editor validation can be performed with Meta XR Simulator, while final device validation should use a Meta Quest 2, Quest 3, or Quest Pro APK install.
+
 \section{Build and Installation Instructions}
 \begin{enumerate}
-    \item Deploy the \texttt{backend} folder to Vercel.
-    \item Update \texttt{APIConfig.cs} with the deployed Vercel URL.
+    \item Backend is deployed to Vercel at \url{https://visnet-assignment.vercel.app}.
+    \item Confirm \texttt{APIConfig.cs} points to the deployed Vercel URL.
     \item Open the Unity project in Unity 6000.0.70f1 or compatible Unity 6 version.
-    \item Run \texttt{ViSNET > Build Assignment Scene}.
-    \item Open \texttt{Assets/Scenes/ViSNET\_XR\_Assignment.unity}.
+    \item Open \texttt{Assets/Scenes/MainScene.unity}.
+    \item Verify \texttt{MainScene.unity} contains the world-space panels and assigned \texttt{AppManager} references.
     \item Switch build target to Android.
-    \item Build an APK for Meta Quest.
+    \item Use OpenXR, IL2CPP, ARM64, and ASTC texture compression.
+    \item Build an APK for Meta Quest and install it on Quest 2, Quest 3, or Quest Pro for final testing.
 \end{enumerate}
 
 \section{GitHub and Deployment Links}
 \begin{itemize}
-    \item GitHub Repository: Add final repository URL before submission.
-    \item Backend Deployment: Add final Vercel URL before submission.
+    \item GitHub Repository: \url{https://github.com/lakshya-02/Visnet-Assignment}
+    \item Backend Deployment: \url{https://visnet-assignment.vercel.app}
     \item APK File: \texttt{ViSNET\_Meta\_Quest\_XR.apk}
 \end{itemize}
 

@@ -40,6 +40,8 @@ Username: testuser
 Password: 123456
 ```
 
+Only this demo user is required by the assignment PDF. Invalid credentials should simply show the failure toast.
+
 ## Required Backend APIs
 
 ```text
@@ -66,14 +68,19 @@ Assets/Scripts/API/APIConfig.cs
 ```text
 Assets/Scripts/API        UnityWebRequest API clients and response models
 Assets/Scripts/Managers   Session and panel navigation state
-Assets/Scripts/UI         UI binding scripts and app controller
+Assets/Scripts/UI         UI binding scripts, theme toggle, and app controller
 backend/                  Vercel/Next.js backend
 docs/                     Report and manual scene hierarchy guide
 ```
 
+## Scene Setup
+
+`Assets/Scenes/MainScene.unity` contains the scene-authored Quest-style world-space dashboard under `WorldSpaceCanvas`.
+Keep the main panels and `AppManager` references in the scene so the submission opens directly into the XR UI.
+
 ## Start From Empty Hierarchy
 
-If the Unity hierarchy is empty, rebuild it manually in this order.
+If starting from a fully empty Unity scene, rebuild the XR foundation in this order first.
 
 ### 1. Import XRI Samples
 
@@ -157,8 +164,8 @@ docs/Unity_Manual_Scene_Hierarchy.md
 ```text
 Render Mode: World Space
 Width: 1200
-Height: 820
-Position: X 0, Y 1.45, Z 2
+Height: 720
+Position: X 0, Y 1.5, Z 2.05
 Rotation: X 0, Y 0, Z 0
 Scale: X 0.0017, Y 0.0017, Z 0.0017
 ```
@@ -181,9 +188,9 @@ Dynamic Pixels Per Unit: 10
 
 Use the XRI 3 Starter Assets `XR Origin (XR Rig)` prefab as-is. Do not manually add old `XR Ray Interactor` or `XR Interactor Line Visual` components. For UI clicking, the important object is the canvas: it must have `Canvas`, `Canvas Scaler`, `Graphic Raycaster`, and `Tracked Device Graphic Raycaster`.
 
-## UI Panels To Create
+## UI Panels
 
-Create these panels directly under `WorldSpaceCanvas`:
+These panels exist directly under `WorldSpaceCanvas`:
 
 ```text
 LoginPanel
@@ -193,7 +200,7 @@ SummaryPanel
 ToastPanel
 ```
 
-Attach scripts:
+Attached scripts:
 
 ```text
 LoginPanel -> LoginUI
@@ -234,19 +241,8 @@ In `ProjectAPI`:
 API Manager: AppManager / APIManager
 ```
 
-In `ManualXrAppController`, wire:
-
-```text
-Auth API
-Project API
-Session Manager
-Navigation Manager
-Login UI
-Project List UI
-Floor Dropdown UI
-Summary UI
-Toast UI
-```
+`ManualXrAppController` uses the Inspector references saved in `MainScene`.
+Before building, select `AppManager` and confirm the login, project, floor, summary, and toast UI fields are assigned.
 
 ## UI Style
 
@@ -262,6 +258,27 @@ Muted Text: #AEB4C2
 Success: #57D68D
 Error: #FF5C7A
 ```
+
+Typography recommendation:
+
+```text
+Best font if you have time: Inter
+Good Android/Quest alternative: Roboto
+Safe current fallback: TextMeshPro default / Liberation Sans
+```
+
+For final submission, it is better to keep the safe TMP fallback than to import a large unused font folder. If you import Inter, import only one regular/medium font asset and one bold font asset.
+
+Optional theme toggle:
+
+```text
+Add UIThemeController to WorldSpaceCanvas or AppManager
+Set Theme Root to WorldSpaceCanvas
+Create a small bulb/icon Button
+Wire Button OnClick -> UIThemeController.ToggleTheme()
+```
+
+This gives a dark/light presentation option without changing the app flow.
 
 Recommended sizes:
 
@@ -292,7 +309,7 @@ Deploy the `backend` folder to Vercel.
 Login with testuser / 123456 works
 Invalid login shows toast
 Projects load from Vercel API
-Project selection loads floors dynamically
+Project selection highlights the card and Continue loads floors dynamically
 Floor selection highlights selected floor
 Summary screen shows user, project, and floor
 Back navigation works
@@ -301,9 +318,18 @@ Toast fades out
 APK builds for Android/Quest
 ```
 
+Testing target:
+
+```text
+Editor smoke test: Unity Play Mode with Meta XR Simulator
+Final required proof: install and run the APK on Meta Quest 2 / Quest 3 / Quest Pro
+```
+
+The app itself is OpenXR + Unity XR Interaction Toolkit. Meta XR Simulator is a required testing option, not the main XR framework.
+
 ## Build APK
 
-Unity build settings:
+Use Unity's normal Android build flow:
 
 ```text
 Platform: Android
@@ -313,7 +339,7 @@ Target Architecture: ARM64
 XR Plug-in Management: OpenXR enabled
 ```
 
-Output:
+Recommended output name:
 
 ```text
 ViSNET_Meta_Quest_XR.apk

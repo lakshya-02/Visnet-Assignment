@@ -23,6 +23,8 @@ namespace VisnetXR.UI
 
         public void Show(string message)
         {
+            gameObject.SetActive(true);
+
             if (activeRoutine != null)
             {
                 StopCoroutine(activeRoutine);

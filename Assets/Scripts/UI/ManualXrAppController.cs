@@ -34,8 +34,11 @@ namespace VisnetXR.UI
         [SerializeField] private Color successColor = new(0.341f, 0.839f, 0.553f, 1f);
         [SerializeField] private Color errorColor = new(1f, 0.361f, 0.478f, 1f);
 
+        private ProjectData selectedProject;
+
         private void Awake()
         {
+            ResolveSceneServices();
             RegisterPanels();
             WireStaticButtons();
             HideTemplates();
@@ -45,6 +48,14 @@ namespace VisnetXR.UI
         {
             sessionManager.Clear();
             navigationManager.ResetTo(LoginPanel);
+        }
+
+        private void ResolveSceneServices()
+        {
+            authAPI ??= GetComponent<AuthAPI>();
+            projectAPI ??= GetComponent<ProjectAPI>();
+            sessionManager ??= GetComponent<SessionManager>();
+            navigationManager ??= GetComponent<NavigationManager>();
         }
 
         private void RegisterPanels()
@@ -59,7 +70,18 @@ namespace VisnetXR.UI
         {
             loginUI.loginButton.onClick.AddListener(OnLoginClicked);
             projectListUI.backButton.onClick.AddListener(OnLogoutClicked);
+            projectListUI.continueButton.onClick.AddListener(ContinueWithSelectedProject);
             floorDropdownUI.backButton.onClick.AddListener(navigationManager.Back);
+            if (floorDropdownUI.backToProjectsButton != null)
+            {
+                floorDropdownUI.backToProjectsButton.onClick.AddListener(navigationManager.Back);
+            }
+
+            if (floorDropdownUI.logoutButton != null)
+            {
+                floorDropdownUI.logoutButton.onClick.AddListener(OnLogoutClicked);
+            }
+
             floorDropdownUI.continueButton.onClick.AddListener(ShowSummary);
             summaryUI.backButton.onClick.AddListener(navigationManager.Back);
             summaryUI.restartButton.onClick.AddListener(OnLogoutClicked);
@@ -103,6 +125,9 @@ namespace VisnetXR.UI
         {
             ClearDynamicItems(projectListUI.listRoot, projectListUI.itemButtonTemplate.transform);
             SetStatus(projectListUI.statusText, "Loading projects...", mutedTextColor);
+            SetStatus(projectListUI.selectedProjectText, "No project selected", mutedTextColor);
+            projectListUI.continueButton.interactable = false;
+            selectedProject = null;
 
             yield return projectAPI.GetProjects(result =>
             {
@@ -119,19 +144,36 @@ namespace VisnetXR.UI
                 foreach (ProjectData project in result.Data.projects)
                 {
                     Button item = CreateItem(projectListUI.itemButtonTemplate, projectListUI.listRoot, project.name);
-                    item.onClick.AddListener(() => OnProjectSelected(project));
+                    item.onClick.AddListener(() => OnProjectSelected(project, item));
                 }
             });
         }
 
-        private void OnProjectSelected(ProjectData project)
+        private void OnProjectSelected(ProjectData project, Button selectedButton)
         {
+            selectedProject = project;
             sessionManager.SetProject(project);
-            floorDropdownUI.projectTitle.text = project.name;
-            floorDropdownUI.continueButton.interactable = false;
+            HighlightSelected(projectListUI.listRoot, selectedButton);
+            SetStatus(projectListUI.selectedProjectText, project.name, successColor);
+            SetStatus(projectListUI.statusText, "Press Continue to load floors", mutedTextColor);
+            projectListUI.continueButton.interactable = true;
             toastUI.Show($"Project Selected: {project.name}");
+        }
+
+        private void ContinueWithSelectedProject()
+        {
+            if (selectedProject == null)
+            {
+                SetStatus(projectListUI.statusText, "Select a project first", errorColor);
+                toastUI.Show("Select a project first");
+                return;
+            }
+
+            floorDropdownUI.projectTitle.text = selectedProject.name;
+            SetStatus(floorDropdownUI.selectedFloorText, "No floor selected", mutedTextColor);
+            floorDropdownUI.continueButton.interactable = false;
             navigationManager.Show(FloorsPanel);
-            StartCoroutine(LoadFloorsRoutine(project.id));
+            StartCoroutine(LoadFloorsRoutine(selectedProject.id));
         }
 
         private IEnumerator LoadFloorsRoutine(int projectId)
@@ -163,6 +205,7 @@ namespace VisnetXR.UI
         {
             sessionManager.SetFloor(floor);
             HighlightSelected(floorDropdownUI.listRoot, selectedButton);
+            SetStatus(floorDropdownUI.selectedFloorText, floor, successColor);
             floorDropdownUI.continueButton.interactable = true;
             toastUI.Show($"Selected Floor: {floor}");
         }
@@ -179,10 +222,15 @@ namespace VisnetXR.UI
         private void OnLogoutClicked()
         {
             sessionManager.Clear();
+            selectedProject = null;
             ClearDynamicItems(projectListUI.listRoot, projectListUI.itemButtonTemplate.transform);
             ClearDynamicItems(floorDropdownUI.listRoot, floorDropdownUI.itemButtonTemplate.transform);
             loginUI.passwordInput.text = string.Empty;
+            SetStatus(projectListUI.selectedProjectText, "No project selected", mutedTextColor);
+            SetStatus(floorDropdownUI.selectedFloorText, "No floor selected", mutedTextColor);
             SetStatus(loginUI.statusText, string.Empty, mutedTextColor);
+            projectListUI.continueButton.interactable = false;
+            floorDropdownUI.continueButton.interactable = false;
             toastUI.Show("Logged out");
             navigationManager.ResetTo(LoginPanel);
         }
@@ -195,6 +243,7 @@ namespace VisnetXR.UI
 
         private static Button CreateItem(Button template, Transform parent, string label)
         {
+            // Clone the hidden template for API-driven rows.
             Button item = Instantiate(template, parent);
             item.gameObject.SetActive(true);
             item.name = label;
@@ -217,18 +266,34 @@ namespace VisnetXR.UI
         {
             foreach (Transform child in root)
             {
-                Image image = child.GetComponent<Image>();
+                Button button = child.GetComponent<Button>();
+                Image image = button != null ? GetButtonImage(button) : child.GetComponent<Image>();
                 if (image != null)
                 {
                     image.color = normalItemColor;
                 }
             }
 
-            Image selectedImage = selectedButton.GetComponent<Image>();
+            Image selectedImage = GetButtonImage(selectedButton);
             if (selectedImage != null)
             {
                 selectedImage.color = selectedItemColor;
             }
+        }
+
+        private static Image GetButtonImage(Button button)
+        {
+            if (button == null)
+            {
+                return null;
+            }
+
+            if (button.targetGraphic is Image targetImage)
+            {
+                return targetImage;
+            }
+
+            return button.GetComponent<Image>() ?? button.GetComponentInChildren<Image>();
         }
 
         private static void ClearDynamicItems(Transform root, Transform template)
