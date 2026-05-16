@@ -47,7 +47,22 @@ namespace VisnetXR.UI
         private void Start()
         {
             sessionManager.Clear();
+            PrefillDemoCredentials();
             navigationManager.ResetTo(LoginPanel);
+        }
+
+        private void PrefillDemoCredentials()
+        {
+            // Keeps Quest recordings moving when the XR keyboard is unavailable.
+            if (loginUI.usernameInput != null && string.IsNullOrWhiteSpace(loginUI.usernameInput.text))
+            {
+                loginUI.usernameInput.text = "testuser";
+            }
+
+            if (loginUI.passwordInput != null && string.IsNullOrWhiteSpace(loginUI.passwordInput.text))
+            {
+                loginUI.passwordInput.text = "123456";
+            }
         }
 
         private void ResolveSceneServices()

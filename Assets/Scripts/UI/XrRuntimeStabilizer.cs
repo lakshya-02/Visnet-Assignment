@@ -1,0 +1,482 @@
+using TMPro;
+using Unity.XR.CoreUtils;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
+using UnityEngine.InputSystem.UI;
+using UnityEngine.UI;
+using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
+using UnityEngine.XR.Interaction.Toolkit.Interactables;
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion;
+using UnityEngine.XR.Interaction.Toolkit.UI;
+using InputXRController = UnityEngine.InputSystem.XR.XRController;
+
+namespace VisnetXR.UI
+{
+    [DefaultExecutionOrder(-10000)]
+    public sealed class XrRuntimeStabilizer : MonoBehaviour, IXRInputButtonReader
+    {
+        private const float PressThreshold = 0.2f;
+        private const float NearDashboardDistance = 1.15f;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void Install()
+        {
+            if (FindAnyObjectByType<XrRuntimeStabilizer>() != null)
+            {
+                return;
+            }
+
+            new GameObject("XR Runtime Stabilizer").AddComponent<XrRuntimeStabilizer>();
+        }
+
+        private bool isPressed;
+        private bool pressedThisFrame;
+        private bool releasedThisFrame;
+        private float pressValue;
+        private static TMP_InputField activeInputField;
+        private static TouchScreenKeyboard nativeKeyboard;
+
+        private void Awake()
+        {
+            DisablePhysicsLocomotion();
+            ConfigureEventSystem();
+            ConfigureCanvases();
+            ConfigurePanelGrabHandles();
+            ConfigureInteractors();
+        }
+
+        private void Update()
+        {
+            SyncNativeKeyboard();
+
+            bool currentPressed = ReadRawPress(out float currentValue);
+            pressedThisFrame = !isPressed && currentPressed;
+            releasedThisFrame = isPressed && !currentPressed;
+            isPressed = currentPressed;
+            pressValue = currentValue;
+        }
+
+        private static void DisablePhysicsLocomotion()
+        {
+            Physics.gravity = Vector3.zero;
+
+            foreach (LocomotionProvider provider in FindObjectsByType<LocomotionProvider>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                provider.enabled = false;
+            }
+
+            foreach (CharacterController controller in FindObjectsByType<CharacterController>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                controller.enabled = false;
+            }
+
+            foreach (Rigidbody body in FindObjectsByType<Rigidbody>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                body.useGravity = false;
+                body.isKinematic = true;
+            }
+
+            foreach (XROrigin origin in FindObjectsByType<XROrigin>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                // Keep the rig root on the recording floor; headset tracking still controls the camera.
+                Vector3 position = origin.transform.position;
+                origin.transform.position = new Vector3(position.x, 0f, position.z);
+            }
+        }
+
+        private static void ConfigureEventSystem()
+        {
+            EventSystem eventSystem = EventSystem.current ?? FindAnyObjectByType<EventSystem>();
+            if (eventSystem == null)
+            {
+                GameObject eventSystemObject = new("EventSystem");
+                eventSystem = eventSystemObject.AddComponent<EventSystem>();
+            }
+
+            XRUIInputModule xrModule = eventSystem.GetComponent<XRUIInputModule>() ?? eventSystem.gameObject.AddComponent<XRUIInputModule>();
+            xrModule.enabled = true;
+            xrModule.enableXRInput = true;
+            xrModule.enableMouseInput = true;
+            xrModule.enableTouchInput = true;
+            xrModule.activeInputMode = XRUIInputModule.ActiveInputMode.InputSystemActions;
+
+            InputSystemUIInputModule inputSystemModule = eventSystem.GetComponent<InputSystemUIInputModule>();
+            if (inputSystemModule != null)
+            {
+                inputSystemModule.enabled = false;
+            }
+        }
+
+        private static void ConfigurePanelGrabHandles()
+        {
+            foreach (Canvas canvas in FindObjectsByType<Canvas>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            {
+                if (canvas.renderMode != RenderMode.WorldSpace)
+                {
+                    continue;
+                }
+
+                Rigidbody body = canvas.GetComponent<Rigidbody>() ?? canvas.gameObject.AddComponent<Rigidbody>();
+                body.useGravity = false;
+                body.isKinematic = true;
+
+                BoxCollider rootGrabCollider = canvas.GetComponent<BoxCollider>() ?? canvas.gameObject.AddComponent<BoxCollider>();
+                rootGrabCollider.size = new Vector3(720f, 90f, 28f);
+                rootGrabCollider.center = new Vector3(0f, 330f, 0f);
+                rootGrabCollider.isTrigger = false;
+
+                XRGrabInteractable grabInteractable = canvas.GetComponent<XRGrabInteractable>() ?? canvas.gameObject.AddComponent<XRGrabInteractable>();
+                grabInteractable.movementType = XRBaseInteractable.MovementType.Instantaneous;
+                grabInteractable.trackPosition = true;
+                grabInteractable.trackRotation = false;
+                grabInteractable.throwOnDetach = false;
+
+                Transform existingHandle = canvas.transform.Find("PanelGrabHandle");
+                GameObject handleObject = existingHandle != null ? existingHandle.gameObject : CreatePanelGrabHandle(canvas.transform);
+
+                BoxCollider handleCollider = handleObject.GetComponent<BoxCollider>() ?? handleObject.AddComponent<BoxCollider>();
+                handleCollider.size = new Vector3(360f, 56f, 24f);
+                handleCollider.center = Vector3.zero;
+                handleCollider.isTrigger = false;
+            }
+        }
+
+        private static GameObject CreatePanelGrabHandle(Transform canvasTransform)
+        {
+            GameObject handleObject = new("PanelGrabHandle", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            handleObject.transform.SetParent(canvasTransform, false);
+
+            RectTransform handleRect = handleObject.GetComponent<RectTransform>();
+            handleRect.anchorMin = new Vector2(0.5f, 0.5f);
+            handleRect.anchorMax = new Vector2(0.5f, 0.5f);
+            handleRect.pivot = new Vector2(0.5f, 0.5f);
+            handleRect.anchoredPosition = new Vector2(0f, 330f);
+            handleRect.sizeDelta = new Vector2(360f, 56f);
+
+            Image handleImage = handleObject.GetComponent<Image>();
+            handleImage.color = new Color(0.231f, 0.510f, 0.965f, 0.22f);
+            handleImage.raycastTarget = false;
+
+            return handleObject;
+        }
+
+        private static void ConfigureCanvases()
+        {
+            Camera mainCamera = Camera.main;
+            foreach (Canvas canvas in FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (canvas.renderMode != RenderMode.WorldSpace)
+                {
+                    continue;
+                }
+
+                if (canvas.worldCamera == null && mainCamera != null)
+                {
+                    canvas.worldCamera = mainCamera;
+                }
+
+                PlaceCanvasInFront(canvas, NearDashboardDistance);
+
+                if (canvas.GetComponent<GraphicRaycaster>() == null)
+                {
+                    canvas.gameObject.AddComponent<GraphicRaycaster>();
+                }
+
+                if (canvas.GetComponent<TrackedDeviceGraphicRaycaster>() == null)
+                {
+                    canvas.gameObject.AddComponent<TrackedDeviceGraphicRaycaster>();
+                }
+
+                ConfigureKeyboard(canvas);
+            }
+        }
+
+        private static void ConfigureKeyboard(Canvas canvas)
+        {
+            Transform existingKeyboard = canvas.transform.Find("XRKeyboardPanel");
+            GameObject keyboardPanel = existingKeyboard != null ? existingKeyboard.gameObject : CreateKeyboardPanel(canvas.transform);
+            keyboardPanel.SetActive(false);
+
+            foreach (TMP_InputField input in canvas.GetComponentsInChildren<TMP_InputField>(true))
+            {
+                input.onSelect.AddListener(_ =>
+                {
+                    activeInputField = input;
+                    keyboardPanel.SetActive(true);
+                    OpenNativeKeyboard(input);
+                });
+            }
+        }
+
+        private static GameObject CreateKeyboardPanel(Transform canvasTransform)
+        {
+            GameObject panel = new("XRKeyboardPanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            panel.transform.SetParent(canvasTransform, false);
+
+            RectTransform panelRect = panel.GetComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition = new Vector2(0f, -240f);
+            panelRect.sizeDelta = new Vector2(820f, 240f);
+
+            Image panelImage = panel.GetComponent<Image>();
+            panelImage.color = new Color(0.043f, 0.063f, 0.094f, 0.96f);
+            panelImage.raycastTarget = false;
+
+            AddKeyboardRow(panel.transform, "1234567890", 72f, 10);
+            AddKeyboardRow(panel.transform, "qwertyuiop", 25f, 10);
+            AddKeyboardRow(panel.transform, "asdfghjkl", -22f, 9);
+            AddKeyboardRow(panel.transform, "zxcvbnm", -69f, 7);
+
+            CreateKeyboardButton(panel.transform, "Demo", new Vector2(-310f, -112f), new Vector2(120f, 38f), () => FillDemoCredentials(panel.GetComponentInParent<Canvas>()));
+            CreateKeyboardButton(panel.transform, "Space", new Vector2(-145f, -112f), new Vector2(180f, 38f), () => InsertText(" "));
+            CreateKeyboardButton(panel.transform, "Back", new Vector2(30f, -112f), new Vector2(100f, 38f), Backspace);
+            CreateKeyboardButton(panel.transform, "Clear", new Vector2(145f, -112f), new Vector2(100f, 38f), ClearActiveInput);
+            CreateKeyboardButton(panel.transform, "Hide", new Vector2(265f, -112f), new Vector2(100f, 38f), () => panel.SetActive(false));
+
+            return panel;
+        }
+
+        private static void AddKeyboardRow(Transform parent, string letters, float y, int count)
+        {
+            const float keyWidth = 54f;
+            const float spacing = 7f;
+            float startX = -((count - 1) * (keyWidth + spacing)) * 0.5f;
+
+            for (int index = 0; index < letters.Length; index++)
+            {
+                string value = letters[index].ToString();
+                CreateKeyboardButton(parent, value, new Vector2(startX + index * (keyWidth + spacing), y), new Vector2(keyWidth, 38f), () => InsertText(value));
+            }
+        }
+
+        private static Button CreateKeyboardButton(Transform parent, string label, Vector2 position, Vector2 size, UnityEngine.Events.UnityAction onClick)
+        {
+            Button button = CreateUiButton(parent, label, position, size, 20);
+            button.onClick.AddListener(onClick);
+            return button;
+        }
+
+        private static Button CreateUiButton(Transform parent, string label, Vector2 position, Vector2 size, int fontSize)
+        {
+            GameObject buttonObject = new(label + "Button", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            buttonObject.transform.SetParent(parent, false);
+
+            RectTransform rect = buttonObject.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
+
+            Image image = buttonObject.GetComponent<Image>();
+            image.color = new Color(0.145f, 0.388f, 0.922f, 0.96f);
+            image.raycastTarget = true;
+
+            Button button = buttonObject.GetComponent<Button>();
+            button.targetGraphic = image;
+
+            GameObject textObject = new("Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            textObject.transform.SetParent(buttonObject.transform, false);
+
+            RectTransform textRect = textObject.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+
+            TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
+            text.text = label;
+            text.fontSize = fontSize;
+            text.color = Color.white;
+            text.alignment = TextAlignmentOptions.Center;
+            text.raycastTarget = false;
+
+            return button;
+        }
+
+        private static void PlaceCanvasInFront(Canvas canvas, float distance)
+        {
+            Camera mainCamera = Camera.main;
+            if (mainCamera == null)
+            {
+                return;
+            }
+
+            Vector3 forward = mainCamera.transform.forward;
+            forward.y = 0f;
+            if (forward.sqrMagnitude < 0.01f)
+            {
+                forward = Vector3.forward;
+            }
+
+            forward.Normalize();
+            canvas.transform.position = mainCamera.transform.position + forward * distance + new Vector3(0f, -0.05f, 0f);
+            canvas.transform.rotation = Quaternion.Euler(0f, mainCamera.transform.eulerAngles.y, 0f);
+        }
+
+        private static void FillDemoCredentials(Canvas canvas)
+        {
+            if (canvas == null)
+            {
+                return;
+            }
+
+            foreach (TMP_InputField input in canvas.GetComponentsInChildren<TMP_InputField>(true))
+            {
+                string lowerName = input.gameObject.name.ToLowerInvariant();
+                if (lowerName.Contains("username"))
+                {
+                    input.text = "testuser";
+                }
+                else if (lowerName.Contains("password"))
+                {
+                    input.text = "123456";
+                }
+            }
+        }
+
+        private static void InsertText(string value)
+        {
+            if (activeInputField == null)
+            {
+                return;
+            }
+
+            activeInputField.text += value;
+            activeInputField.caretPosition = activeInputField.text.Length;
+        }
+
+        private static void Backspace()
+        {
+            if (activeInputField == null || string.IsNullOrEmpty(activeInputField.text))
+            {
+                return;
+            }
+
+            activeInputField.text = activeInputField.text[..^1];
+            activeInputField.caretPosition = activeInputField.text.Length;
+        }
+
+        private static void ClearActiveInput()
+        {
+            if (activeInputField != null)
+            {
+                activeInputField.text = string.Empty;
+            }
+        }
+
+        private static void OpenNativeKeyboard(TMP_InputField input)
+        {
+            if (!TouchScreenKeyboard.isSupported)
+            {
+                return;
+            }
+
+            bool isPassword = input.contentType == TMP_InputField.ContentType.Password;
+            nativeKeyboard = TouchScreenKeyboard.Open(input.text, TouchScreenKeyboardType.Default, false, false, isPassword);
+        }
+
+        private static void SyncNativeKeyboard()
+        {
+            if (nativeKeyboard == null || activeInputField == null)
+            {
+                return;
+            }
+
+            activeInputField.text = nativeKeyboard.text;
+            if (nativeKeyboard.status != TouchScreenKeyboard.Status.Visible)
+            {
+                nativeKeyboard = null;
+            }
+        }
+
+        private void ConfigureInteractors()
+        {
+            foreach (XRRayInteractor ray in FindObjectsByType<XRRayInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                ray.enableUIInteraction = false;
+                ray.uiPressInput.bypass = this;
+                ray.enableUIInteraction = true;
+            }
+
+            foreach (NearFarInteractor nearFar in FindObjectsByType<NearFarInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                nearFar.enableUIInteraction = false;
+                nearFar.uiPressInput.bypass = this;
+                nearFar.enableUIInteraction = true;
+            }
+        }
+
+        public bool ReadIsPerformed()
+        {
+            return isPressed;
+        }
+
+        public bool ReadWasPerformedThisFrame()
+        {
+            return pressedThisFrame;
+        }
+
+        public bool ReadWasCompletedThisFrame()
+        {
+            return releasedThisFrame;
+        }
+
+        public float ReadValue()
+        {
+            return pressValue;
+        }
+
+        public bool TryReadValue(out float value)
+        {
+            value = pressValue;
+            return true;
+        }
+
+        private static bool ReadRawPress(out float value)
+        {
+            value = 0f;
+
+            if (Mouse.current?.leftButton.isPressed == true)
+            {
+                value = 1f;
+                return true;
+            }
+
+            if (Keyboard.current?.spaceKey.isPressed == true)
+            {
+                value = 1f;
+                return true;
+            }
+
+            foreach (InputDevice device in InputSystem.devices)
+            {
+                if (device is not InputXRController controller)
+                {
+                    continue;
+                }
+
+                AxisControl trigger = controller.TryGetChildControl<AxisControl>("trigger");
+                ButtonControl triggerPressedControl = controller.TryGetChildControl<ButtonControl>("triggerPressed")
+                    ?? controller.TryGetChildControl<ButtonControl>("triggerButton");
+
+                float triggerValue = trigger?.ReadValue() ?? 0f;
+                bool triggerPressed = triggerPressedControl?.isPressed == true || triggerValue > PressThreshold;
+                value = Mathf.Max(value, triggerValue);
+
+                if (triggerPressed)
+                {
+                    value = Mathf.Max(value, 1f);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+}
