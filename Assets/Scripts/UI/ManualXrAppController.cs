@@ -21,7 +21,6 @@ namespace VisnetXR.UI
 
         [Header("UI Screens")]
         [SerializeField] private LoginUI loginUI;
-        [SerializeField] private ProjectListUI projectListUI;
         [SerializeField] private FloorDropdownUI floorDropdownUI;
         [SerializeField] private SummaryUI summaryUI;
         [SerializeField] private ToastUI toastUI;
@@ -118,7 +117,6 @@ namespace VisnetXR.UI
 
         private void HideTemplates()
         {
-            projectListUI.itemButtonTemplate.gameObject.SetActive(false);
             floorDropdownUI.itemButtonTemplate.gameObject.SetActive(false);
         }
 
@@ -173,7 +171,7 @@ namespace VisnetXR.UI
                 SetStatus(floorDropdownUI.statusText, "Select a project", mutedTextColor);
                 foreach (ProjectData project in result.Data.projects)
                 {
-                    Button item = CreateItem(projectListUI.itemButtonTemplate, projectSelectionRoot, project.name);
+                    Button item = CreateItem(floorDropdownUI.itemButtonTemplate, projectSelectionRoot, project.name);
                     ConfigureSelectionButton(item);
                     item.onClick.AddListener(() => OnSelectionProjectClicked(project, item));
                 }
@@ -241,14 +239,11 @@ namespace VisnetXR.UI
         {
             sessionManager.Clear();
             selectedProject = null;
-            ClearDynamicItems(projectListUI.listRoot, projectListUI.itemButtonTemplate.transform);
             ClearDynamicItems(projectSelectionRoot, null);
             ClearDynamicItems(floorDropdownUI.listRoot, floorDropdownUI.itemButtonTemplate.transform);
             loginUI.passwordInput.text = string.Empty;
-            SetStatus(projectListUI.selectedProjectText, "No project selected", mutedTextColor);
             SetStatus(floorDropdownUI.selectedFloorText, "No floor selected", mutedTextColor);
             SetStatus(loginUI.statusText, string.Empty, mutedTextColor);
-            projectListUI.continueButton.interactable = false;
             floorDropdownUI.continueButton.interactable = false;
             toastUI.Show("Logged out");
             navigationManager.ResetTo(LoginPanel);
@@ -387,7 +382,6 @@ namespace VisnetXR.UI
                 ConfigureSelectionList(floorDropdownUI.listRoot);
             }
 
-            ConfigureSelectionButton(projectListUI.itemButtonTemplate);
             ConfigureSelectionButton(floorDropdownUI.itemButtonTemplate);
         }
 

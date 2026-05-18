@@ -7684,7 +7684,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1398095088}
-  - component: {fileID: 1398095089}
   m_Layer: 0
   m_Name: ProjectListPanel
   m_TagString: Untagged
@@ -7715,25 +7714,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1100, y: 620}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1398095089
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1398095087}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea4afd532e64d4646bbe9dc6b794304c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  panel: {fileID: 1398095087}
-  listRoot: {fileID: 1790679359}
-  itemButtonTemplate: {fileID: 1018435142}
-  backButton: {fileID: 543004444}
-  continueButton: {fileID: 1057530073}
-  selectedProjectText: {fileID: 2099923815}
-  statusText: {fileID: 1749769140}
 --- !u!1 &1404595685
 GameObject:
   m_ObjectHideFlags: 0
@@ -11889,7 +11869,6 @@ MonoBehaviour:
   sessionManager: {fileID: 2079336006}
   navigationManager: {fileID: 2079336005}
   loginUI: {fileID: 1990178572}
-  projectListUI: {fileID: 1398095089}
   floorDropdownUI: {fileID: 508036453}
   summaryUI: {fileID: 2056356222}
   toastUI: {fileID: 224725657}

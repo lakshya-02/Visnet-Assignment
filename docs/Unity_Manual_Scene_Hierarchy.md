@@ -25,7 +25,6 @@ The UI is under:
 ```text
 WorldSpaceCanvas
 |-- LoginPanel
-|-- ProjectListPanel
 |-- FloorSelectionPanel
 |-- SummaryPanel
 |-- ToastPanel
@@ -35,7 +34,6 @@ Initial active state:
 
 ```text
 LoginPanel: active
-ProjectListPanel: inactive
 FloorSelectionPanel: inactive
 SummaryPanel: inactive
 ToastPanel: inactive
@@ -155,7 +153,7 @@ API Manager
 ```
 
 The controller uses Inspector references saved on `AppManager`.
-Before building, confirm the login, project, floor, summary, and toast UI fields are assigned.
+Before building, confirm the login, combined selector, summary, and toast UI fields are assigned.
 
 ## Visual Style
 
@@ -213,9 +211,9 @@ Use this order before building the APK:
 ```text
 1. Press Play in Unity.
 2. Login with testuser / 123456.
-3. Confirm ProjectListPanel opens.
-4. Select a project.
-5. Press Continue and confirm FloorSelectionPanel opens.
+3. Confirm the combined selector opens above the left controller.
+4. Select a project in the left selector column.
+5. Confirm floors load in the right selector column.
 6. Select a floor and confirm it turns blue.
 7. Press Continue.
 8. Confirm SummaryPanel shows user, project, and floor.

@@ -1,6 +1,6 @@
 # ViSNET Meta Quest XR Assignment
 
-Unity XR assignment project for a Meta Quest-style application with login, project listing, dynamic floor selection, backend API integration, XR ray interaction, toast feedback, and a final summary screen.
+Unity XR assignment project for a Meta Quest-style application with login, combined project/floor selection, backend API integration, XR ray interaction, toast feedback, and a final summary screen.
 
 The project is built as:
 
@@ -145,7 +145,6 @@ MainScene
 |-- EventSystem
 |-- WorldSpaceCanvas
 |   |-- LoginPanel
-|   |-- ProjectListPanel
 |   |-- FloorSelectionPanel
 |   |-- SummaryPanel
 |   |-- ToastPanel
@@ -194,7 +193,6 @@ These panels exist directly under `WorldSpaceCanvas`:
 
 ```text
 LoginPanel
-ProjectListPanel
 FloorSelectionPanel
 SummaryPanel
 ToastPanel
@@ -204,7 +202,6 @@ Attached scripts:
 
 ```text
 LoginPanel -> LoginUI
-ProjectListPanel -> ProjectListUI
 FloorSelectionPanel -> FloorDropdownUI
 SummaryPanel -> SummaryUI
 ToastPanel -> ToastUI + CanvasGroup

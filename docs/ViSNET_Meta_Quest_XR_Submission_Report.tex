@@ -26,15 +26,15 @@
 \maketitle
 
 \section{Project Overview}
-This project implements a Meta Quest XR application in Unity with a login system, project listing, dynamic floor selection, backend API integration, XR-compatible navigation, and a polished world-space user interface. The experience is designed as a compact product flow rather than a generic assignment screen.
+This project implements a Meta Quest XR application in Unity with a login system, combined project/floor selection, backend API integration, XR-compatible navigation, and a polished world-space user interface. The experience is designed as a compact product flow rather than a generic assignment screen.
 
 \section{Assignment Requirements Covered}
 \begin{itemize}
     \item Login screen with username, password, login button, status, and toast feedback.
     \item Backend API integration for login, project listing, and floor listing.
-    \item Project list rendered dynamically from API response data.
-    \item Floor options rendered dynamically based on the selected project.
-    \item Forward and backward navigation across login, project, floor, and summary screens.
+    \item Project options rendered dynamically from API response data.
+    \item Floor options rendered dynamically beside the selected project.
+    \item Forward and backward navigation across login, selector, and summary screens.
     \item XR world-space UI suitable for controller ray interaction.
     \item Dashboard is mounted above the left controller, while the right controller ray is used to select floors and trigger menu actions.
     \item Toast notifications for success, failure, selected project, and selected floor.
@@ -92,7 +92,7 @@ Core script groups:
 \begin{itemize}
     \item \texttt{Assets/Scripts/API}: API configuration, models, login API, and project API.
     \item \texttt{Assets/Scripts/Managers}: Session and navigation state.
-    \item \texttt{Assets/Scripts/UI}: Login, project list, floor dropdown, toast, controller feedback, and scene UI bindings.
+    \item \texttt{Assets/Scripts/UI}: Login, combined selector, toast, controller feedback, and scene UI bindings.
 \end{itemize}
 
 \section{Meta Quest UI/UX Design Approach}
@@ -105,10 +105,10 @@ AI assistance was used for planning, documentation structuring, and review check
 
 \section{Testing Checklist}
 \begin{itemize}
-    \item Correct login opens the project list.
+    \item Correct login opens the combined project/floor selector.
     \item Wrong login shows an invalid credentials toast.
-    \item Project list loads from the backend API.
-    \item Selecting a project highlights it, and Continue loads only that project's floors.
+    \item Project options load from the backend API.
+    \item Selecting a project highlights it and loads only that project's floors.
     \item Selecting a floor highlights the selected option.
     \item Summary screen shows user, project, and floor.
     \item Back navigation works.
