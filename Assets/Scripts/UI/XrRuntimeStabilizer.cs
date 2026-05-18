@@ -182,7 +182,6 @@ namespace VisnetXR.UI
                 handMountedCanvas.transform.SetParent(menuAnchor, false);
             }
 
-            // HR requested the dashboard above the left controller; the right controller ray remains the selector.
             handMountedCanvas.transform.localPosition = Vector3.zero;
             handMountedCanvas.transform.localRotation = Quaternion.identity;
             handMountedCanvas.transform.localScale = Vector3.one * HandMountedDashboardScale;

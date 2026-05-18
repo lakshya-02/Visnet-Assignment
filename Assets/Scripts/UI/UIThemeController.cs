@@ -49,7 +49,6 @@ namespace VisnetXR.UI
 
         private void UseReadableLightPalette()
         {
-            // Scene values can be stale after quick UI iterations, so normalize contrast at runtime.
             lightShell = new Color(0.855f, 0.890f, 0.945f, 0.98f);
             lightSurface = new Color(0.965f, 0.976f, 0.992f, 1f);
             lightInputSurface = new Color(0.812f, 0.855f, 0.925f, 1f);
@@ -147,7 +146,7 @@ namespace VisnetXR.UI
 
             foreach (Image image in themeRoot.GetComponentsInChildren<Image>(true))
             {
-                if (IsFloorCenterElement(image.transform))
+                if (UsesFixedSelectionColor(image.transform))
                 {
                     continue;
                 }
@@ -159,7 +158,6 @@ namespace VisnetXR.UI
                     continue;
                 }
 
-                // Names keep scene styling stable without a heavy theme framework.
                 string lowerName = image.gameObject.name.ToLowerInvariant();
                 if (lowerName.Contains("input") || lowerName.Contains("search"))
                 {
@@ -215,7 +213,7 @@ namespace VisnetXR.UI
 
             foreach (TMP_Text text in themeRoot.GetComponentsInChildren<TMP_Text>(true))
             {
-                if (IsFloorCenterElement(text.transform))
+                if (UsesFixedSelectionColor(text.transform))
                 {
                     continue;
                 }
@@ -243,12 +241,17 @@ namespace VisnetXR.UI
             }
         }
 
-        private static bool IsFloorCenterElement(Transform transform)
+        private static bool UsesFixedSelectionColor(Transform transform)
         {
             while (transform != null)
             {
                 string name = transform.name;
-                if (name == "FloorDropdownHeader" || name == "FloorListRoot" || name == "FloorButtonTemplate")
+                if (name == "ProjectDropdownHeader"
+                    || name == "FloorDropdownHeader"
+                    || name == "ProjectSelectionRoot"
+                    || name == "FloorListRoot"
+                    || name == "ProjectButtonTemplate"
+                    || name == "FloorButtonTemplate")
                 {
                     return true;
                 }
