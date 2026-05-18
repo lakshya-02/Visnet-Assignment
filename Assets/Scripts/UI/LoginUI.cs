@@ -4,6 +4,9 @@ using UnityEngine.UI;
 
 namespace VisnetXR.UI
 {
+    /// <summary>
+    /// Inspector bindings for the login panel.
+    /// </summary>
     public class LoginUI : MonoBehaviour
     {
         public GameObject panel;

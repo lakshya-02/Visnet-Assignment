@@ -4,6 +4,9 @@ using UnityEngine.UI;
 
 namespace VisnetXR.UI
 {
+    /// <summary>
+    /// Applies a lightweight dark/light palette to the world-space dashboard.
+    /// </summary>
     public class UIThemeController : MonoBehaviour
     {
         [Header("Scene")]

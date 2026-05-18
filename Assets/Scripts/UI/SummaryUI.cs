@@ -4,6 +4,9 @@ using UnityEngine.UI;
 
 namespace VisnetXR.UI
 {
+    /// <summary>
+    /// Inspector bindings for the final confirmation panel.
+    /// </summary>
     public class SummaryUI : MonoBehaviour
     {
         public GameObject panel;

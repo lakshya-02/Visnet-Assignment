@@ -3,6 +3,9 @@ using UnityEngine;
 
 namespace VisnetXR.Managers
 {
+    /// <summary>
+    /// Keeps panel activation and back-stack state isolated from UI button logic.
+    /// </summary>
     public class NavigationManager : MonoBehaviour
     {
         private readonly Dictionary<string, GameObject> panels = new();

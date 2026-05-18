@@ -6,6 +6,9 @@ using UnityEngine.Networking;
 
 namespace VisnetXR.API
 {
+    /// <summary>
+    /// Thin UnityWebRequest wrapper for JSON API calls.
+    /// </summary>
     public class APIManager : MonoBehaviour
     {
         public IEnumerator Get<T>(string path, Action<ApiResult<T>> onComplete)

@@ -4,6 +4,9 @@ using UnityEngine.UI;
 
 namespace VisnetXR.UI
 {
+    /// <summary>
+    /// Inspector bindings for the combined project and floor selector panel.
+    /// </summary>
     public class FloorDropdownUI : MonoBehaviour
     {
         public GameObject panel;

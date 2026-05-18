@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace VisnetXR.API
 {
+    /// <summary>
+    /// Project and floor API facade consumed by the selector UI.
+    /// </summary>
     public class ProjectAPI : MonoBehaviour
     {
         [SerializeField] private APIManager apiManager;

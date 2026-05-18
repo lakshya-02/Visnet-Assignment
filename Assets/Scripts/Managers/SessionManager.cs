@@ -3,6 +3,9 @@ using VisnetXR.API;
 
 namespace VisnetXR.Managers
 {
+    /// <summary>
+    /// Stores the active user and selection state for the current XR session.
+    /// </summary>
     public class SessionManager : MonoBehaviour
     {
         public string Token { get; private set; }

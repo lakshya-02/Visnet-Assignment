@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace VisnetXR.API
 {
+    /// <summary>
+    /// Auth-specific API facade for the login flow.
+    /// </summary>
     public class AuthAPI : MonoBehaviour
     {
         [SerializeField] private APIManager apiManager;

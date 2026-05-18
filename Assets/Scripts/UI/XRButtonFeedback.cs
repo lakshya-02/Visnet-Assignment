@@ -3,6 +3,9 @@ using UnityEngine.EventSystems;
 
 namespace VisnetXR.UI
 {
+    /// <summary>
+    /// Adds subtle hover and press scaling for controller-targeted UI buttons.
+    /// </summary>
     public class XRButtonFeedback : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler
     {
         [SerializeField] private float hoverScale = 1.025f;

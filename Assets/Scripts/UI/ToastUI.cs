@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace VisnetXR.UI
 {
+    /// <summary>
+    /// Handles short-lived status feedback without blocking the XR flow.
+    /// </summary>
     public class ToastUI : MonoBehaviour
     {
         [SerializeField] private CanvasGroup canvasGroup;

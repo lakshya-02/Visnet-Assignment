@@ -7,6 +7,9 @@ using VisnetXR.Managers;
 
 namespace VisnetXR.UI
 {
+    /// <summary>
+    /// Drives the assignment flow from login to project/floor selection and final confirmation.
+    /// </summary>
     public class ManualXrAppController : MonoBehaviour
     {
         private const string LoginPanel = "login";
@@ -99,10 +102,10 @@ namespace VisnetXR.UI
         private void WireStaticButtons()
         {
             loginUI.loginButton.onClick.AddListener(OnLoginClicked);
-            floorDropdownUI.backButton.onClick.AddListener(navigationManager.Back);
+            floorDropdownUI.backButton.onClick.AddListener(OnBackClicked);
             if (floorDropdownUI.backToProjectsButton != null)
             {
-                floorDropdownUI.backToProjectsButton.onClick.AddListener(navigationManager.Back);
+                floorDropdownUI.backToProjectsButton.onClick.AddListener(OnBackClicked);
             }
 
             if (floorDropdownUI.logoutButton != null)
@@ -111,7 +114,7 @@ namespace VisnetXR.UI
             }
 
             floorDropdownUI.continueButton.onClick.AddListener(ShowSummary);
-            summaryUI.backButton.onClick.AddListener(navigationManager.Back);
+            summaryUI.backButton.onClick.AddListener(OnBackClicked);
             summaryUI.restartButton.onClick.AddListener(OnLogoutClicked);
         }
 
@@ -122,6 +125,7 @@ namespace VisnetXR.UI
 
         private void OnLoginClicked()
         {
+            XrRuntimeStabilizer.HideKeyboard();
             StartCoroutine(LoginRoutine());
         }
 
@@ -143,6 +147,7 @@ namespace VisnetXR.UI
                 sessionManager.SetLogin(result.Data);
                 SetStatus(loginUI.statusText, "Login successful", successColor);
                 toastUI.Show("Login Successful");
+                XrRuntimeStabilizer.HideKeyboard();
                 navigationManager.Show(FloorsPanel);
                 StartCoroutine(LoadSelectionRoutine());
             });
@@ -228,6 +233,7 @@ namespace VisnetXR.UI
 
         private void ShowSummary()
         {
+            XrRuntimeStabilizer.HideKeyboard();
             summaryUI.userText.text = $"Welcome, {sessionManager.User?.name ?? "Test User"}";
             summaryUI.projectText.text = $"Selected Project: {sessionManager.SelectedProject?.name ?? "-"}";
             summaryUI.floorText.text = $"Selected Floor: {sessionManager.SelectedFloor}";
@@ -237,6 +243,7 @@ namespace VisnetXR.UI
 
         private void OnLogoutClicked()
         {
+            XrRuntimeStabilizer.HideKeyboard();
             sessionManager.Clear();
             selectedProject = null;
             ClearDynamicItems(projectSelectionRoot, null);
@@ -247,6 +254,12 @@ namespace VisnetXR.UI
             floorDropdownUI.continueButton.interactable = false;
             toastUI.Show("Logged out");
             navigationManager.ResetTo(LoginPanel);
+        }
+
+        private void OnBackClicked()
+        {
+            XrRuntimeStabilizer.HideKeyboard();
+            navigationManager.Back();
         }
 
         private void SetLoginBusy(bool isBusy, string message)

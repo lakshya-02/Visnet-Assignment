@@ -16,6 +16,9 @@ using InputXRController = UnityEngine.InputSystem.XR.XRController;
 
 namespace VisnetXR.UI
 {
+    /// <summary>
+    /// Runtime guard for Quest input, hand-mounted canvas placement, and fallback editor keyboard support.
+    /// </summary>
     [DefaultExecutionOrder(-10000)]
     public sealed class XrRuntimeStabilizer : MonoBehaviour, IXRInputButtonReader
     {
@@ -93,7 +96,7 @@ namespace VisnetXR.UI
 
             foreach (XROrigin origin in FindObjectsByType<XROrigin>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
-                // Keep the rig root on the recording floor; headset tracking still controls the camera.
+                // Keep the rig root stable while headset tracking continues to drive the camera pose.
                 Vector3 position = origin.transform.position;
                 origin.transform.position = new Vector3(position.x, 0f, position.z);
             }
@@ -326,9 +329,35 @@ namespace VisnetXR.UI
             CreateKeyboardButton(panel.transform, "Space", new Vector2(-145f, -112f), new Vector2(180f, 38f), () => InsertText(" "));
             CreateKeyboardButton(panel.transform, "Back", new Vector2(30f, -112f), new Vector2(100f, 38f), Backspace);
             CreateKeyboardButton(panel.transform, "Clear", new Vector2(145f, -112f), new Vector2(100f, 38f), ClearActiveInput);
-            CreateKeyboardButton(panel.transform, "Hide", new Vector2(265f, -112f), new Vector2(100f, 38f), () => panel.SetActive(false));
+            CreateKeyboardButton(panel.transform, "Hide", new Vector2(265f, -112f), new Vector2(100f, 38f), HideKeyboard);
 
             return panel;
+        }
+
+        public static void HideKeyboard()
+        {
+            if (activeInputField != null)
+            {
+                activeInputField.DeactivateInputField();
+                activeInputField = null;
+            }
+
+            if (nativeKeyboard != null)
+            {
+                nativeKeyboard.active = false;
+                nativeKeyboard = null;
+            }
+
+            EventSystem.current?.SetSelectedGameObject(null);
+
+            foreach (Canvas canvas in FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                Transform keyboard = canvas.transform.Find("XRKeyboardPanel");
+                if (keyboard != null)
+                {
+                    keyboard.gameObject.SetActive(false);
+                }
+            }
         }
 
         private static void AddKeyboardRow(Transform parent, string letters, float y, int count)
