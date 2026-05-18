@@ -19,11 +19,11 @@ namespace VisnetXR.UI
     [DefaultExecutionOrder(-10000)]
     public sealed class XrRuntimeStabilizer : MonoBehaviour, IXRInputButtonReader
     {
+        private const string LeftControllerMenuAnchorName = "LeftControllerMenuAnchor";
         private const float PressThreshold = 0.2f;
         private const float NearDashboardDistance = 1.15f;
         private const float HandMountedDashboardScale = 0.001f;
-        private static readonly Vector3 LeftControllerMenuOffset = new(0.22f, 0.48f, 0.24f);
-        private static readonly Vector3 LeftControllerMenuEuler = new(0f, 0f, 0f);
+        private static readonly Vector3 LeftControllerMenuOffset = new(0f, 0.36f, 0.18f);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Install()
@@ -44,6 +44,7 @@ namespace VisnetXR.UI
         private static TouchScreenKeyboard nativeKeyboard;
         private Canvas handMountedCanvas;
         private Transform leftControllerAnchor;
+        private Transform menuAnchor;
         private bool isDashboardHandMounted;
 
         private void Awake()
@@ -173,14 +174,17 @@ namespace VisnetXR.UI
                 return;
             }
 
-            if (handMountedCanvas.transform.parent != leftControllerAnchor)
+            menuAnchor = EnsureMenuAnchor(leftControllerAnchor, menuAnchor);
+            FaceMenuTowardHeadset(menuAnchor);
+
+            if (handMountedCanvas.transform.parent != menuAnchor)
             {
-                handMountedCanvas.transform.SetParent(leftControllerAnchor, false);
+                handMountedCanvas.transform.SetParent(menuAnchor, false);
             }
 
-            // HR requested the dashboard to live above the left controller while the right ray selects UI.
-            handMountedCanvas.transform.localPosition = LeftControllerMenuOffset;
-            handMountedCanvas.transform.localRotation = Quaternion.Euler(LeftControllerMenuEuler);
+            // HR requested the dashboard above the left controller; the right controller ray remains the selector.
+            handMountedCanvas.transform.localPosition = Vector3.zero;
+            handMountedCanvas.transform.localRotation = Quaternion.identity;
             handMountedCanvas.transform.localScale = Vector3.one * HandMountedDashboardScale;
             isDashboardHandMounted = true;
         }
@@ -192,9 +196,49 @@ namespace VisnetXR.UI
                 canvas.transform.SetParent(null, true);
                 isDashboardHandMounted = false;
                 leftControllerAnchor = null;
+                menuAnchor = null;
             }
 
             PlaceCanvasInFront(canvas, NearDashboardDistance);
+        }
+
+        private static Transform EnsureMenuAnchor(Transform leftController, Transform existingAnchor)
+        {
+            if (existingAnchor != null && existingAnchor.parent == leftController)
+            {
+                existingAnchor.localPosition = LeftControllerMenuOffset;
+                return existingAnchor;
+            }
+
+            Transform foundAnchor = leftController.Find(LeftControllerMenuAnchorName);
+            if (foundAnchor == null)
+            {
+                foundAnchor = new GameObject(LeftControllerMenuAnchorName).transform;
+                foundAnchor.SetParent(leftController, false);
+            }
+
+            foundAnchor.localPosition = LeftControllerMenuOffset;
+            foundAnchor.localRotation = Quaternion.identity;
+            foundAnchor.localScale = Vector3.one;
+            return foundAnchor;
+        }
+
+        private static void FaceMenuTowardHeadset(Transform anchor)
+        {
+            Camera mainCamera = Camera.main;
+            if (mainCamera == null)
+            {
+                return;
+            }
+
+            Vector3 lookDirection = anchor.position - mainCamera.transform.position;
+            lookDirection.y = 0f;
+            if (lookDirection.sqrMagnitude < 0.001f)
+            {
+                return;
+            }
+
+            anchor.rotation = Quaternion.LookRotation(lookDirection.normalized, Vector3.up);
         }
 
         private static Canvas FindWorldSpaceCanvas()
