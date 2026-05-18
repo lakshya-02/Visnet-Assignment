@@ -5,10 +5,11 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 using UnityEngine.InputSystem.UI;
+using UnityEngine.InputSystem.Utilities;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
-using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
+using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion;
 using UnityEngine.XR.Interaction.Toolkit.UI;
 using InputXRController = UnityEngine.InputSystem.XR.XRController;
@@ -20,6 +21,9 @@ namespace VisnetXR.UI
     {
         private const float PressThreshold = 0.2f;
         private const float NearDashboardDistance = 1.15f;
+        private const float HandMountedDashboardScale = 0.001f;
+        private static readonly Vector3 LeftControllerMenuOffset = new(0.22f, 0.48f, 0.24f);
+        private static readonly Vector3 LeftControllerMenuEuler = new(0f, 0f, 0f);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Install()
@@ -38,13 +42,15 @@ namespace VisnetXR.UI
         private float pressValue;
         private static TMP_InputField activeInputField;
         private static TouchScreenKeyboard nativeKeyboard;
+        private Canvas handMountedCanvas;
+        private Transform leftControllerAnchor;
+        private bool isDashboardHandMounted;
 
         private void Awake()
         {
             DisablePhysicsLocomotion();
             ConfigureEventSystem();
             ConfigureCanvases();
-            ConfigurePanelGrabHandles();
             ConfigureInteractors();
         }
 
@@ -57,6 +63,11 @@ namespace VisnetXR.UI
             releasedThisFrame = isPressed && !currentPressed;
             isPressed = currentPressed;
             pressValue = currentValue;
+        }
+
+        private void LateUpdate()
+        {
+            AttachDashboardToLeftController();
         }
 
         private static void DisablePhysicsLocomotion()
@@ -110,59 +121,6 @@ namespace VisnetXR.UI
             }
         }
 
-        private static void ConfigurePanelGrabHandles()
-        {
-            foreach (Canvas canvas in FindObjectsByType<Canvas>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
-            {
-                if (canvas.renderMode != RenderMode.WorldSpace)
-                {
-                    continue;
-                }
-
-                Rigidbody body = canvas.GetComponent<Rigidbody>() ?? canvas.gameObject.AddComponent<Rigidbody>();
-                body.useGravity = false;
-                body.isKinematic = true;
-
-                BoxCollider rootGrabCollider = canvas.GetComponent<BoxCollider>() ?? canvas.gameObject.AddComponent<BoxCollider>();
-                rootGrabCollider.size = new Vector3(720f, 90f, 28f);
-                rootGrabCollider.center = new Vector3(0f, 330f, 0f);
-                rootGrabCollider.isTrigger = false;
-
-                XRGrabInteractable grabInteractable = canvas.GetComponent<XRGrabInteractable>() ?? canvas.gameObject.AddComponent<XRGrabInteractable>();
-                grabInteractable.movementType = XRBaseInteractable.MovementType.Instantaneous;
-                grabInteractable.trackPosition = true;
-                grabInteractable.trackRotation = false;
-                grabInteractable.throwOnDetach = false;
-
-                Transform existingHandle = canvas.transform.Find("PanelGrabHandle");
-                GameObject handleObject = existingHandle != null ? existingHandle.gameObject : CreatePanelGrabHandle(canvas.transform);
-
-                BoxCollider handleCollider = handleObject.GetComponent<BoxCollider>() ?? handleObject.AddComponent<BoxCollider>();
-                handleCollider.size = new Vector3(360f, 56f, 24f);
-                handleCollider.center = Vector3.zero;
-                handleCollider.isTrigger = false;
-            }
-        }
-
-        private static GameObject CreatePanelGrabHandle(Transform canvasTransform)
-        {
-            GameObject handleObject = new("PanelGrabHandle", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            handleObject.transform.SetParent(canvasTransform, false);
-
-            RectTransform handleRect = handleObject.GetComponent<RectTransform>();
-            handleRect.anchorMin = new Vector2(0.5f, 0.5f);
-            handleRect.anchorMax = new Vector2(0.5f, 0.5f);
-            handleRect.pivot = new Vector2(0.5f, 0.5f);
-            handleRect.anchoredPosition = new Vector2(0f, 330f);
-            handleRect.sizeDelta = new Vector2(360f, 56f);
-
-            Image handleImage = handleObject.GetComponent<Image>();
-            handleImage.color = new Color(0.231f, 0.510f, 0.965f, 0.22f);
-            handleImage.raycastTarget = false;
-
-            return handleObject;
-        }
-
         private static void ConfigureCanvases()
         {
             Camera mainCamera = Camera.main;
@@ -192,6 +150,95 @@ namespace VisnetXR.UI
 
                 ConfigureKeyboard(canvas);
             }
+        }
+
+        private void AttachDashboardToLeftController()
+        {
+            handMountedCanvas ??= FindWorldSpaceCanvas();
+            if (handMountedCanvas == null)
+            {
+                return;
+            }
+
+            if (!IsLeftControllerTracked())
+            {
+                UseCameraFallback(handMountedCanvas);
+                return;
+            }
+
+            leftControllerAnchor ??= FindControllerTransform(true);
+            if (leftControllerAnchor == null)
+            {
+                UseCameraFallback(handMountedCanvas);
+                return;
+            }
+
+            if (handMountedCanvas.transform.parent != leftControllerAnchor)
+            {
+                handMountedCanvas.transform.SetParent(leftControllerAnchor, false);
+            }
+
+            // HR requested the dashboard to live above the left controller while the right ray selects UI.
+            handMountedCanvas.transform.localPosition = LeftControllerMenuOffset;
+            handMountedCanvas.transform.localRotation = Quaternion.Euler(LeftControllerMenuEuler);
+            handMountedCanvas.transform.localScale = Vector3.one * HandMountedDashboardScale;
+            isDashboardHandMounted = true;
+        }
+
+        private void UseCameraFallback(Canvas canvas)
+        {
+            if (isDashboardHandMounted || canvas.transform.parent != null)
+            {
+                canvas.transform.SetParent(null, true);
+                isDashboardHandMounted = false;
+                leftControllerAnchor = null;
+            }
+
+            PlaceCanvasInFront(canvas, NearDashboardDistance);
+        }
+
+        private static Canvas FindWorldSpaceCanvas()
+        {
+            Canvas fallbackCanvas = null;
+            foreach (Canvas canvas in FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (canvas.renderMode != RenderMode.WorldSpace)
+                {
+                    continue;
+                }
+
+                if (canvas.name == "WorldSpaceCanvas")
+                {
+                    return canvas;
+                }
+
+                fallbackCanvas ??= canvas;
+            }
+
+            return fallbackCanvas;
+        }
+
+        private static bool IsLeftControllerTracked()
+        {
+            InputXRController leftController = InputSystem.GetDevice<InputXRController>(CommonUsages.LeftHand);
+            if (leftController == null || !leftController.enabled)
+            {
+                return false;
+            }
+
+            ButtonControl isTracked = leftController.TryGetChildControl<ButtonControl>("isTracked");
+            if (isTracked != null)
+            {
+                return isTracked.isPressed;
+            }
+
+            IntegerControl trackingState = leftController.TryGetChildControl<IntegerControl>("trackingState");
+            if (trackingState != null)
+            {
+                return trackingState.ReadValue() != 0;
+            }
+
+            return true;
         }
 
         private static void ConfigureKeyboard(Canvas canvas)
@@ -399,17 +446,126 @@ namespace VisnetXR.UI
         {
             foreach (XRRayInteractor ray in FindObjectsByType<XRRayInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
+                bool isRightHand = IsRightHandInteractor(ray);
                 ray.enableUIInteraction = false;
-                ray.uiPressInput.bypass = this;
-                ray.enableUIInteraction = true;
+                if (isRightHand)
+                {
+                    ray.uiPressInput.bypass = this;
+                    ray.enableUIInteraction = true;
+                }
+
+                XRInteractorLineVisual lineVisual = ray.GetComponent<XRInteractorLineVisual>();
+                if (lineVisual != null)
+                {
+                    lineVisual.enabled = isRightHand;
+                }
             }
 
             foreach (NearFarInteractor nearFar in FindObjectsByType<NearFarInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
+                bool isRightHand = IsRightHandInteractor(nearFar);
                 nearFar.enableUIInteraction = false;
-                nearFar.uiPressInput.bypass = this;
-                nearFar.enableUIInteraction = true;
+                if (isRightHand)
+                {
+                    nearFar.uiPressInput.bypass = this;
+                    nearFar.enableUIInteraction = true;
+                }
             }
+        }
+
+        private static Transform FindControllerTransform(bool leftHand)
+        {
+            string desired = leftHand ? "left" : "right";
+            foreach (Transform transform in FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                string lowerName = transform.name.ToLowerInvariant();
+                if (lowerName.Contains(desired) && lowerName.Contains("controller"))
+                {
+                    return transform;
+                }
+            }
+
+            foreach (XRBaseInteractor interactor in FindObjectsByType<XRBaseInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (leftHand && !IsLeftHandInteractor(interactor))
+                {
+                    continue;
+                }
+
+                if (!leftHand && !IsRightHandInteractor(interactor))
+                {
+                    continue;
+                }
+
+                return FindNamedControllerParent(interactor.transform, desired) ?? interactor.transform;
+            }
+
+            return null;
+        }
+
+        private static Transform FindNamedControllerParent(Transform start, string desired)
+        {
+            Transform current = start;
+            while (current != null)
+            {
+                string lowerName = current.name.ToLowerInvariant();
+                if (lowerName.Contains(desired) && lowerName.Contains("controller"))
+                {
+                    return current;
+                }
+
+                current = current.parent;
+            }
+
+            return null;
+        }
+
+        private static bool IsRightHandInteractor(XRBaseInteractor interactor)
+        {
+            return IsHandInteractor(interactor, InteractorHandedness.Right);
+        }
+
+        private static bool IsLeftHandInteractor(XRBaseInteractor interactor)
+        {
+            return IsHandInteractor(interactor, InteractorHandedness.Left);
+        }
+
+        private static bool IsHandInteractor(XRBaseInteractor interactor, InteractorHandedness handedness)
+        {
+            if (interactor.handedness == handedness)
+            {
+                return true;
+            }
+
+            InteractorHandedness oppositeHand = handedness == InteractorHandedness.Right ? InteractorHandedness.Left : InteractorHandedness.Right;
+            if (interactor.handedness == oppositeHand)
+            {
+                return false;
+            }
+
+            string hierarchyName = GetHierarchyName(interactor.transform);
+            string desired = handedness == InteractorHandedness.Right ? "right" : "left";
+            string opposite = handedness == InteractorHandedness.Right ? "left" : "right";
+
+            if (hierarchyName.Contains(desired))
+            {
+                return true;
+            }
+
+            return !hierarchyName.Contains(opposite) && handedness == InteractorHandedness.Right;
+        }
+
+        private static string GetHierarchyName(Transform transform)
+        {
+            string names = string.Empty;
+            Transform current = transform;
+            while (current != null)
+            {
+                names += current.name.ToLowerInvariant();
+                current = current.parent;
+            }
+
+            return names;
         }
 
         public bool ReadIsPerformed()
@@ -454,6 +610,13 @@ namespace VisnetXR.UI
                 return true;
             }
 
+            InputXRController rightController = InputSystem.GetDevice<InputXRController>(CommonUsages.RightHand);
+            if (rightController != null)
+            {
+                return TryReadControllerPress(rightController, ref value);
+            }
+
+            bool foundRightNamedController = false;
             foreach (InputDevice device in InputSystem.devices)
             {
                 if (device is not InputXRController controller)
@@ -461,17 +624,80 @@ namespace VisnetXR.UI
                     continue;
                 }
 
-                AxisControl trigger = controller.TryGetChildControl<AxisControl>("trigger");
-                ButtonControl triggerPressedControl = controller.TryGetChildControl<ButtonControl>("triggerPressed")
-                    ?? controller.TryGetChildControl<ButtonControl>("triggerButton");
-
-                float triggerValue = trigger?.ReadValue() ?? 0f;
-                bool triggerPressed = triggerPressedControl?.isPressed == true || triggerValue > PressThreshold;
-                value = Mathf.Max(value, triggerValue);
-
-                if (triggerPressed)
+                if (!IsRightHandDevice(controller))
                 {
-                    value = Mathf.Max(value, 1f);
+                    continue;
+                }
+
+                foundRightNamedController = true;
+                if (TryReadControllerPress(controller, ref value))
+                {
+                    return true;
+                }
+            }
+
+            if (foundRightNamedController)
+            {
+                return false;
+            }
+
+            foreach (InputDevice device in InputSystem.devices)
+            {
+                if (device is InputXRController controller && TryReadControllerPress(controller, ref value))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryReadControllerPress(InputXRController controller, ref float value)
+        {
+            AxisControl trigger = controller.TryGetChildControl<AxisControl>("trigger");
+            ButtonControl triggerPressedControl = controller.TryGetChildControl<ButtonControl>("triggerPressed")
+                ?? controller.TryGetChildControl<ButtonControl>("triggerButton");
+
+            float triggerValue = trigger?.ReadValue() ?? 0f;
+            bool triggerPressed = triggerPressedControl?.isPressed == true || triggerValue > PressThreshold;
+            value = Mathf.Max(value, triggerValue);
+
+            if (!triggerPressed)
+            {
+                return false;
+            }
+
+            value = Mathf.Max(value, 1f);
+            return true;
+        }
+
+        private static bool IsRightHandDevice(InputDevice device)
+        {
+            if (HasUsage(device, CommonUsages.RightHand))
+            {
+                return true;
+            }
+
+            if (HasUsage(device, CommonUsages.LeftHand))
+            {
+                return false;
+            }
+
+            string deviceName = $"{device.name} {device.displayName} {device.description.product}".ToLowerInvariant();
+            if (deviceName.Contains("right"))
+            {
+                return true;
+            }
+
+            return !deviceName.Contains("left");
+        }
+
+        private static bool HasUsage(InputDevice device, InternedString usage)
+        {
+            foreach (InternedString deviceUsage in device.usages)
+            {
+                if (deviceUsage == usage)
+                {
                     return true;
                 }
             }

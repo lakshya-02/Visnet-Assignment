@@ -18,15 +18,15 @@
 \titleformat{\section}{\large\bfseries\color{darkink}}{}{0em}{}[\titlerule]
 \setlist[itemize]{leftmargin=1.2em}
 
-\title{\textbf{Assignment Report}\\ViSNET Meta Quest XR Application}
-\author{Lakshya}
+\title{\textbf{ViSNET Meta Quest XR Application}\\Submission Report}
+\author{Lakshya Singh}
 \date{May 2026}
 
 \begin{document}
 \maketitle
 
 \section{Project Overview}
-This project implements a Meta Quest XR application in Unity with a login system, project listing, dynamic floor selection, backend API integration, XR-compatible navigation, and a polished world-space user interface. The experience is designed as a compact Quest-style product flow rather than a generic desktop form.
+This project implements a Meta Quest XR application in Unity with a login system, project listing, dynamic floor selection, backend API integration, XR-compatible navigation, and a polished world-space user interface. The experience is designed as a compact product flow rather than a generic assignment screen.
 
 \section{Assignment Requirements Covered}
 \begin{itemize}
@@ -36,10 +36,8 @@ This project implements a Meta Quest XR application in Unity with a login system
     \item Floor options rendered dynamically based on the selected project.
     \item Forward and backward navigation across login, project, floor, and summary screens.
     \item XR world-space UI suitable for controller ray interaction.
+    \item Dashboard is mounted above the left controller, while the right controller ray is used to select floors and trigger menu actions.
     \item Toast notifications for success, failure, selected project, and selected floor.
-    \item Optional dark/light visual theme support for final UI polish.
-    \item Runtime XR usability support including comfortable panel placement, a draggable panel handle, and an in-world keyboard fallback.
-    \item Testing path prepared for Meta XR Simulator, Quest headset Play Mode, and Android APK build.
     \item Organized Unity scripts and a Vercel-ready backend folder.
 \end{itemize}
 
@@ -47,7 +45,7 @@ This project implements a Meta Quest XR application in Unity with a login system
 The solution is split into two main parts:
 
 \begin{itemize}
-    \item \textbf{Unity XR Frontend}: Handles world-space UI, session state, navigation, toast feedback, runtime XR interaction support, and API calls through UnityWebRequest.
+    \item \textbf{Unity XR Frontend}: Handles world-space UI, session state, navigation, toast feedback, and API calls through UnityWebRequest.
     \item \textbf{Vercel Backend}: Provides serverless API routes using a minimal Next.js application with hardcoded assignment data.
 \end{itemize}
 
@@ -88,7 +86,7 @@ Returns four selectable projects: Project A, Project B, Project C, and Project D
 Returns floors for the selected project. Each project has different floor data to demonstrate dynamic dropdown behavior.
 
 \section{Unity XR Implementation}
-The Unity project uses a single-scene architecture for reliability and speed. The scene contains a Meta Quest-style world-space dashboard, Inspector-wired UI references, button navigation logic, backend API calls, and runtime XR interaction safeguards.
+The Unity project uses a single-scene architecture for reliability and speed. The scene contains a Meta Quest-style world-space dashboard, Inspector-wired UI references, button navigation logic, and backend API calls. The dashboard is attached at runtime to the left controller to match the requested controller-mounted menu behavior, and right-hand interaction is reserved for selecting projects, floors, and buttons.
 
 Core script groups:
 \begin{itemize}
@@ -97,12 +95,10 @@ Core script groups:
     \item \texttt{Assets/Scripts/UI}: Login, project list, floor dropdown, toast, controller feedback, and scene UI bindings.
 \end{itemize}
 
-Additional runtime support is handled by \texttt{XrRuntimeStabilizer.cs}. It keeps the UI at a comfortable Quest viewing distance, prevents unintended falling from locomotion/gravity during this assignment flow, configures XR UI input, adds a draggable panel handle, and provides an in-world keyboard fallback when the system keyboard is unavailable.
-
 \section{Meta Quest UI/UX Design Approach}
-The interface is designed to feel closer to a Quest-native spatial UI. It uses floating panels, high contrast typography, rounded buttons, blue selected states, hover/press feedback, accent rails, status pills, and world-space toast notifications. The UI is readable at VR distance and avoids a flat desktop form layout.
+The interface is designed to feel closer to a Quest-native spatial UI. It uses floating dark panels, high contrast typography, rounded buttons, blue selected states, hover/press feedback, accent rails, status pills, and world-space toast notifications. The UI is readable at VR distance and avoids a flat desktop form layout.
 
-The visual direction uses an Inter/Roboto-style modern sans-serif approach, with TextMeshPro's default font as a safe project fallback. The world-space dashboard is positioned in front of the XR origin at a comfortable viewing distance for Quest testing. A small theme controller is included so the interface can support dark and light presentation modes without changing the backend or navigation logic. The login inputs also include a demo credential fallback so the full flow can be demonstrated reliably in simulator and APK recordings.
+The visual direction uses an Inter/Roboto-style modern sans-serif approach, with TextMeshPro's default font as a safe project fallback. The world-space dashboard is positioned in front of the XR origin at a comfortable viewing distance for Quest testing.
 
 \section{AI Usage Disclosure}
 AI assistance was used for planning, documentation structuring, and review checklist support. The final Unity scene UI, integration, testing, and submission build were assembled and reviewed by the developer.
@@ -116,16 +112,15 @@ AI assistance was used for planning, documentation structuring, and review check
     \item Selecting a floor highlights the selected option.
     \item Summary screen shows user, project, and floor.
     \item Back navigation works.
-    \item XR ray interaction works with controller input.
+    \item Left controller carries the floating UI menu above the controller.
+    \item Right controller ray interaction selects floors and triggers menu buttons.
     \item Toast notifications fade correctly.
-    \item XR Origin is positioned at the scene origin and the world-space dashboard appears comfortably in front of the player.
-    \item In-world keyboard appears for input fields and demo credentials can be filled without relying on the platform keyboard.
-    \item Dashboard handle can be used to reposition the world-space UI if needed.
+    \item XR Origin is positioned at the scene origin and the dashboard follows the left controller.
     \item Backend tests and production build pass.
     \item APK installs and opens on a Meta Quest device or simulator.
 \end{itemize}
 
-The application supports testing through Meta XR Simulator and Meta Quest headset builds. Editor validation can be performed with Meta XR Simulator, while final device validation should use a Meta Quest 2, Quest 3, or Quest Pro APK install. A video recording is submitted separately to show the simulator/headset flow.
+Editor testing can be performed using Unity Play Mode with XR Device Simulator or Meta XR Simulator if available. Final submission testing should prioritize a real Meta Quest 3 or Quest headset APK install because the APK is the required deliverable.
 
 \section{Build and Installation Instructions}
 \begin{enumerate}
@@ -135,9 +130,7 @@ The application supports testing through Meta XR Simulator and Meta Quest headse
     \item Open \texttt{Assets/Scenes/MainScene.unity}.
     \item Verify \texttt{MainScene.unity} contains the world-space panels and assigned \texttt{AppManager} references.
     \item Switch build target to Android.
-    \item Use OpenXR, IL2CPP, ARM64, and ASTC texture compression.
-    \item Build an APK for Meta Quest and install it on Quest 2, Quest 3, or Quest Pro for final testing.
-    \item Record the login, project selection, floor selection, and summary screen flow for submission evidence.
+    \item Build an APK for Meta Quest.
 \end{enumerate}
 
 \section{GitHub and Deployment Links}
@@ -145,7 +138,6 @@ The application supports testing through Meta XR Simulator and Meta Quest headse
     \item GitHub Repository: \url{https://github.com/lakshya-02/Visnet-Assignment}
     \item Backend Deployment: \url{https://visnet-assignment.vercel.app}
     \item APK File: \texttt{ViSNET\_Meta\_Quest\_XR.apk}
-    \item Demonstration Videos: submitted with the final assignment package.
 \end{itemize}
 
 \end{document}
