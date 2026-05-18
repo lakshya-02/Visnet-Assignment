@@ -23,11 +23,11 @@ namespace VisnetXR.UI
         [SerializeField] private Color darkText = new(0.973f, 0.980f, 0.988f, 1f);
 
         [Header("Light Theme")]
-        [SerializeField] private Color lightShell = new(0.902f, 0.933f, 0.976f, 0.96f);
-        [SerializeField] private Color lightSurface = new(0.976f, 0.984f, 0.996f, 0.98f);
-        [SerializeField] private Color lightInputSurface = new(0.886f, 0.918f, 0.965f, 1f);
+        [SerializeField] private Color lightShell = new(0.855f, 0.890f, 0.945f, 0.98f);
+        [SerializeField] private Color lightSurface = new(0.965f, 0.976f, 0.992f, 1f);
+        [SerializeField] private Color lightInputSurface = new(0.812f, 0.855f, 0.925f, 1f);
         [SerializeField] private Color lightButton = new(0.145f, 0.388f, 0.922f, 1f);
-        [SerializeField] private Color lightText = new(0.059f, 0.091f, 0.165f, 1f);
+        [SerializeField] private Color lightText = new(0.043f, 0.063f, 0.094f, 1f);
 
         private bool isLightMode;
         private Sprite generatedCircleSprite;
@@ -35,6 +35,7 @@ namespace VisnetXR.UI
         private void Awake()
         {
             themeRoot ??= transform;
+            UseReadableLightPalette();
             EnsureToggleButton();
 
             if (toggleButton != null)
@@ -44,6 +45,16 @@ namespace VisnetXR.UI
 
             NormalizeToggleIcon();
             ApplyTheme(startInLightMode);
+        }
+
+        private void UseReadableLightPalette()
+        {
+            // Scene values can be stale after quick UI iterations, so normalize contrast at runtime.
+            lightShell = new Color(0.855f, 0.890f, 0.945f, 0.98f);
+            lightSurface = new Color(0.965f, 0.976f, 0.992f, 1f);
+            lightInputSurface = new Color(0.812f, 0.855f, 0.925f, 1f);
+            lightButton = new Color(0.145f, 0.388f, 0.922f, 1f);
+            lightText = new Color(0.043f, 0.063f, 0.094f, 1f);
         }
 
         private void EnsureToggleButton()
@@ -136,10 +147,15 @@ namespace VisnetXR.UI
 
             foreach (Image image in themeRoot.GetComponentsInChildren<Image>(true))
             {
+                if (IsFloorCenterElement(image.transform))
+                {
+                    continue;
+                }
+
                 Button parentButton = image.GetComponentInParent<Button>();
                 if (parentButton != null)
                 {
-                    image.color = parentButton.targetGraphic == image ? button : Color.white;
+                    image.color = parentButton.targetGraphic == image ? button : (lightMode ? new Color(0.043f, 0.063f, 0.094f, 1f) : Color.white);
                     continue;
                 }
 
@@ -195,11 +211,18 @@ namespace VisnetXR.UI
         {
             Color textColor = lightMode ? lightText : darkText;
             Color buttonTextColor = Color.white;
-            Color placeholderColor = lightMode ? new Color(0.392f, 0.455f, 0.545f, 1f) : new Color(0.682f, 0.706f, 0.761f, 1f);
+            Color placeholderColor = lightMode ? new Color(0.226f, 0.275f, 0.357f, 1f) : new Color(0.682f, 0.706f, 0.761f, 1f);
 
             foreach (TMP_Text text in themeRoot.GetComponentsInChildren<TMP_Text>(true))
             {
-                text.color = text.GetComponentInParent<Button>() != null ? buttonTextColor : textColor;
+                if (IsFloorCenterElement(text.transform))
+                {
+                    continue;
+                }
+
+                bool isButtonText = text.GetComponentInParent<Button>() != null;
+                text.color = isButtonText ? buttonTextColor : textColor;
+                text.alpha = 1f;
             }
 
             foreach (TMP_InputField input in themeRoot.GetComponentsInChildren<TMP_InputField>(true))
@@ -218,6 +241,22 @@ namespace VisnetXR.UI
                     placeholder.color = placeholderColor;
                 }
             }
+        }
+
+        private static bool IsFloorCenterElement(Transform transform)
+        {
+            while (transform != null)
+            {
+                string name = transform.name;
+                if (name == "FloorDropdownHeader" || name == "FloorListRoot" || name == "FloorButtonTemplate")
+                {
+                    return true;
+                }
+
+                transform = transform.parent;
+            }
+
+            return false;
         }
     }
 }
