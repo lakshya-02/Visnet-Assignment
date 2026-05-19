@@ -49,6 +49,7 @@ namespace VisnetXR.UI
         private Transform leftControllerAnchor;
         private Transform menuAnchor;
         private bool isDashboardHandMounted;
+        private float nextInteractorRefreshTime;
 
         private void Awake()
         {
@@ -61,6 +62,7 @@ namespace VisnetXR.UI
         private void Update()
         {
             SyncNativeKeyboard();
+            RefreshInteractorsForSimulator();
 
             bool currentPressed = ReadRawPress(out float currentValue);
             pressedThisFrame = !isPressed && currentPressed;
@@ -514,35 +516,69 @@ namespace VisnetXR.UI
             }
         }
 
+        private void RefreshInteractorsForSimulator()
+        {
+            if (Time.unscaledTime < nextInteractorRefreshTime)
+            {
+                return;
+            }
+
+            nextInteractorRefreshTime = Time.unscaledTime + 0.75f;
+            ConfigureInteractors();
+        }
+
         private void ConfigureInteractors()
         {
-            foreach (XRRayInteractor ray in FindObjectsByType<XRRayInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            XRRayInteractor[] rays = FindObjectsByType<XRRayInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            NearFarInteractor[] nearFars = FindObjectsByType<NearFarInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            bool hasRightHandInteractor = HasRightHandInteractor(rays, nearFars);
+
+            foreach (XRRayInteractor ray in rays)
             {
-                bool isRightHand = IsRightHandInteractor(ray);
-                ray.enableUIInteraction = false;
-                if (isRightHand)
+                bool enableInteractor = hasRightHandInteractor ? IsRightHandInteractor(ray) : true;
+                ray.enableUIInteraction = enableInteractor;
+                if (enableInteractor)
                 {
                     ray.uiPressInput.bypass = this;
-                    ray.enableUIInteraction = true;
                 }
 
                 XRInteractorLineVisual lineVisual = ray.GetComponent<XRInteractorLineVisual>();
                 if (lineVisual != null)
                 {
-                    lineVisual.enabled = isRightHand;
+                    lineVisual.enabled = enableInteractor;
                 }
             }
 
-            foreach (NearFarInteractor nearFar in FindObjectsByType<NearFarInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            foreach (NearFarInteractor nearFar in nearFars)
             {
-                bool isRightHand = IsRightHandInteractor(nearFar);
-                nearFar.enableUIInteraction = false;
-                if (isRightHand)
+                bool enableInteractor = hasRightHandInteractor ? IsRightHandInteractor(nearFar) : true;
+                nearFar.enableUIInteraction = enableInteractor;
+                if (enableInteractor)
                 {
                     nearFar.uiPressInput.bypass = this;
-                    nearFar.enableUIInteraction = true;
                 }
             }
+        }
+
+        private static bool HasRightHandInteractor(XRRayInteractor[] rays, NearFarInteractor[] nearFars)
+        {
+            foreach (XRRayInteractor ray in rays)
+            {
+                if (IsRightHandInteractor(ray))
+                {
+                    return true;
+                }
+            }
+
+            foreach (NearFarInteractor nearFar in nearFars)
+            {
+                if (IsRightHandInteractor(nearFar))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static Transform FindControllerTransform(bool leftHand)
@@ -685,24 +721,19 @@ namespace VisnetXR.UI
             InputXRController rightController = InputSystem.GetDevice<InputXRController>(CommonUsages.RightHand);
             if (rightController != null)
             {
-                return TryReadControllerPress(rightController, ref value);
+                return TryReadDevicePress(rightController, ref value);
             }
 
             bool foundRightNamedController = false;
             foreach (InputDevice device in InputSystem.devices)
             {
-                if (device is not InputXRController controller)
-                {
-                    continue;
-                }
-
-                if (!IsRightHandDevice(controller))
+                if (!IsRightHandDevice(device))
                 {
                     continue;
                 }
 
                 foundRightNamedController = true;
-                if (TryReadControllerPress(controller, ref value))
+                if (TryReadDevicePress(device, ref value))
                 {
                     return true;
                 }
@@ -715,7 +746,7 @@ namespace VisnetXR.UI
 
             foreach (InputDevice device in InputSystem.devices)
             {
-                if (device is InputXRController controller && TryReadControllerPress(controller, ref value))
+                if (TryReadDevicePress(device, ref value))
                 {
                     return true;
                 }
@@ -724,11 +755,16 @@ namespace VisnetXR.UI
             return false;
         }
 
-        private static bool TryReadControllerPress(InputXRController controller, ref float value)
+        private static bool TryReadDevicePress(InputDevice device, ref float value)
         {
-            AxisControl trigger = controller.TryGetChildControl<AxisControl>("trigger");
-            ButtonControl triggerPressedControl = controller.TryGetChildControl<ButtonControl>("triggerPressed")
-                ?? controller.TryGetChildControl<ButtonControl>("triggerButton");
+            AxisControl trigger = device.TryGetChildControl<AxisControl>("trigger")
+                ?? device.TryGetChildControl<AxisControl>("indexTrigger");
+
+            ButtonControl triggerPressedControl = device.TryGetChildControl<ButtonControl>("triggerPressed")
+                ?? device.TryGetChildControl<ButtonControl>("triggerButton")
+                ?? device.TryGetChildControl<ButtonControl>("select")
+                ?? device.TryGetChildControl<ButtonControl>("selectButton")
+                ?? device.TryGetChildControl<ButtonControl>("primaryButton");
 
             float triggerValue = trigger?.ReadValue() ?? 0f;
             bool triggerPressed = triggerPressedControl?.isPressed == true || triggerValue > PressThreshold;

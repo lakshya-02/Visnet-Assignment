@@ -15,6 +15,8 @@ namespace VisnetXR.UI
         private const string LoginPanel = "login";
         private const string FloorsPanel = "floors";
         private const string SummaryPanel = "summary";
+        private const string ProjectPlaceholder = "Projects";
+        private const string FloorPlaceholder = "Floors";
 
         [Header("Services")]
         [SerializeField] private AuthAPI authAPI;
@@ -44,6 +46,14 @@ namespace VisnetXR.UI
         private ProjectData selectedProject;
         private Sprite roundedSprite;
         private RectTransform projectSelectionRoot;
+        private Button projectDropdownButton;
+        private Button floorDropdownButton;
+        private TMP_Text projectDropdownLabel;
+        private TMP_Text floorDropdownLabel;
+        private TMP_Text projectDropdownCaret;
+        private TMP_Text floorDropdownCaret;
+        private bool isProjectDropdownOpen;
+        private bool isFloorDropdownOpen;
 
         private void Awake()
         {
@@ -157,6 +167,12 @@ namespace VisnetXR.UI
         {
             ClearDynamicItems(projectSelectionRoot, null);
             ClearDynamicItems(floorDropdownUI.listRoot, floorDropdownUI.itemButtonTemplate.transform);
+            SetDropdownLabel(projectDropdownLabel, ProjectPlaceholder);
+            SetDropdownLabel(floorDropdownLabel, FloorPlaceholder);
+            SetDropdownOpen(projectSelectionRoot, projectDropdownCaret, false, ref isProjectDropdownOpen);
+            SetDropdownOpen(floorDropdownUI.listRoot, floorDropdownCaret, false, ref isFloorDropdownOpen);
+            SetDropdownInteractable(projectDropdownButton, false);
+            SetDropdownInteractable(floorDropdownButton, false);
             SetStatus(floorDropdownUI.selectedFloorText, "No floor selected", mutedTextColor);
             SetStatus(floorDropdownUI.statusText, "Loading projects...", mutedTextColor);
             floorDropdownUI.continueButton.interactable = false;
@@ -174,12 +190,15 @@ namespace VisnetXR.UI
                 }
 
                 SetStatus(floorDropdownUI.statusText, "Select a project", mutedTextColor);
+                SetDropdownInteractable(projectDropdownButton, true);
                 foreach (ProjectData project in result.Data.projects)
                 {
                     Button item = CreateItem(floorDropdownUI.itemButtonTemplate, projectSelectionRoot, project.name);
                     ConfigureSelectionButton(item);
                     item.onClick.AddListener(() => OnSelectionProjectClicked(project, item));
                 }
+
+                SetDropdownOpen(projectSelectionRoot, projectDropdownCaret, true, ref isProjectDropdownOpen);
             });
         }
 
@@ -188,6 +207,11 @@ namespace VisnetXR.UI
             selectedProject = project;
             sessionManager.SetProject(project);
             HighlightSelected(projectSelectionRoot, selectedButton);
+            SetDropdownLabel(projectDropdownLabel, project.name);
+            SetDropdownLabel(floorDropdownLabel, FloorPlaceholder);
+            SetDropdownOpen(projectSelectionRoot, projectDropdownCaret, false, ref isProjectDropdownOpen);
+            SetDropdownOpen(floorDropdownUI.listRoot, floorDropdownCaret, false, ref isFloorDropdownOpen);
+            SetDropdownInteractable(floorDropdownButton, false);
             ClearDynamicItems(floorDropdownUI.listRoot, floorDropdownUI.itemButtonTemplate.transform);
             SetStatus(floorDropdownUI.selectedFloorText, "No floor selected", mutedTextColor);
             SetStatus(floorDropdownUI.statusText, "Loading floors...", mutedTextColor);
@@ -213,12 +237,15 @@ namespace VisnetXR.UI
                 }
 
                 SetStatus(floorDropdownUI.statusText, "Select a floor", mutedTextColor);
+                SetDropdownInteractable(floorDropdownButton, true);
                 foreach (string floor in result.Data.floors)
                 {
                     Button item = CreateItem(floorDropdownUI.itemButtonTemplate, floorDropdownUI.listRoot, floor);
                     ConfigureSelectionButton(item);
                     item.onClick.AddListener(() => OnFloorSelected(floor, item));
                 }
+
+                SetDropdownOpen(floorDropdownUI.listRoot, floorDropdownCaret, true, ref isFloorDropdownOpen);
             });
         }
 
@@ -226,6 +253,8 @@ namespace VisnetXR.UI
         {
             sessionManager.SetFloor(floor);
             HighlightSelected(floorDropdownUI.listRoot, selectedButton);
+            SetDropdownLabel(floorDropdownLabel, floor);
+            SetDropdownOpen(floorDropdownUI.listRoot, floorDropdownCaret, false, ref isFloorDropdownOpen);
             SetStatus(floorDropdownUI.selectedFloorText, floor, successColor);
             floorDropdownUI.continueButton.interactable = true;
             toastUI.Show($"Selected Floor: {floor}");
@@ -248,6 +277,10 @@ namespace VisnetXR.UI
             selectedProject = null;
             ClearDynamicItems(projectSelectionRoot, null);
             ClearDynamicItems(floorDropdownUI.listRoot, floorDropdownUI.itemButtonTemplate.transform);
+            SetDropdownLabel(projectDropdownLabel, ProjectPlaceholder);
+            SetDropdownLabel(floorDropdownLabel, FloorPlaceholder);
+            SetDropdownOpen(projectSelectionRoot, projectDropdownCaret, false, ref isProjectDropdownOpen);
+            SetDropdownOpen(floorDropdownUI.listRoot, floorDropdownCaret, false, ref isFloorDropdownOpen);
             loginUI.passwordInput.text = string.Empty;
             SetStatus(floorDropdownUI.selectedFloorText, "No floor selected", mutedTextColor);
             SetStatus(loginUI.statusText, string.Empty, mutedTextColor);
@@ -379,11 +412,15 @@ namespace VisnetXR.UI
                 floorDropdownUI.projectTitle.gameObject.SetActive(false);
             }
 
-            Transform projectHeader = EnsureSelectorHeader(centerArea, "ProjectDropdownHeader", "Projects");
-            SetRect(projectHeader, -165f, 205f, 285f, 58f);
+            projectDropdownButton = EnsureSelectorHeader(centerArea, "ProjectDropdownHeader", ProjectPlaceholder, out projectDropdownLabel, out projectDropdownCaret);
+            projectDropdownButton.onClick.RemoveAllListeners();
+            projectDropdownButton.onClick.AddListener(ToggleProjectDropdown);
+            SetRect(projectDropdownButton.transform, -165f, 205f, 285f, 58f);
 
-            Transform floorHeader = EnsureSelectorHeader(centerArea, "FloorDropdownHeader", "Floors");
-            SetRect(floorHeader, 165f, 205f, 285f, 58f);
+            floorDropdownButton = EnsureSelectorHeader(centerArea, "FloorDropdownHeader", FloorPlaceholder, out floorDropdownLabel, out floorDropdownCaret);
+            floorDropdownButton.onClick.RemoveAllListeners();
+            floorDropdownButton.onClick.AddListener(ToggleFloorDropdown);
+            SetRect(floorDropdownButton.transform, 165f, 205f, 285f, 58f);
 
             projectSelectionRoot = EnsureSelectionRoot(centerArea, "ProjectSelectionRoot");
             SetRect(projectSelectionRoot.transform, -165f, 0f, 285f, 330f);
@@ -396,9 +433,13 @@ namespace VisnetXR.UI
             }
 
             ConfigureSelectionButton(floorDropdownUI.itemButtonTemplate);
+            SetDropdownOpen(projectSelectionRoot, projectDropdownCaret, false, ref isProjectDropdownOpen);
+            SetDropdownOpen(floorDropdownUI.listRoot, floorDropdownCaret, false, ref isFloorDropdownOpen);
+            SetDropdownInteractable(projectDropdownButton, false);
+            SetDropdownInteractable(floorDropdownButton, false);
         }
 
-        private Transform EnsureSelectorHeader(Transform centerArea, string objectName, string title)
+        private Button EnsureSelectorHeader(Transform centerArea, string objectName, string title, out TMP_Text label, out TMP_Text caret)
         {
             Transform header = FindDirectChild(centerArea, objectName);
             if (header == null)
@@ -412,23 +453,31 @@ namespace VisnetXR.UI
             headerImage.sprite = roundedSprite;
             headerImage.type = roundedSprite != null ? Image.Type.Sliced : Image.Type.Simple;
             headerImage.color = dropdownColor;
-            headerImage.raycastTarget = false;
+            headerImage.raycastTarget = true;
 
-            TMP_Text label = EnsureText(header, "Label");
+            Button button = header.GetComponent<Button>() ?? header.gameObject.AddComponent<Button>();
+            button.targetGraphic = headerImage;
+
+            if (header.GetComponent<XRButtonFeedback>() == null)
+            {
+                header.gameObject.AddComponent<XRButtonFeedback>();
+            }
+
+            label = EnsureText(header, "Label");
             label.text = title;
             label.fontSize = 24f;
             label.color = selectionTextColor;
             label.alignment = TextAlignmentOptions.MidlineLeft;
             SetRect(label.transform, -20f, 0f, 205f, 58f);
 
-            TMP_Text caret = EnsureText(header, "Caret");
+            caret = EnsureText(header, "Caret");
             caret.text = "v";
             caret.fontSize = 28f;
             caret.color = selectionTextColor;
             caret.alignment = TextAlignmentOptions.Center;
             SetRect(caret.transform, 118f, 1f, 40f, 58f);
 
-            return header;
+            return button;
         }
 
         private RectTransform EnsureSelectionRoot(Transform centerArea, string objectName)
@@ -509,6 +558,49 @@ namespace VisnetXR.UI
         private bool IsSelectionRoot(Transform root)
         {
             return root == floorDropdownUI.listRoot || root == projectSelectionRoot;
+        }
+
+        private void ToggleProjectDropdown()
+        {
+            SetDropdownOpen(projectSelectionRoot, projectDropdownCaret, !isProjectDropdownOpen, ref isProjectDropdownOpen);
+            SetDropdownOpen(floorDropdownUI.listRoot, floorDropdownCaret, false, ref isFloorDropdownOpen);
+        }
+
+        private void ToggleFloorDropdown()
+        {
+            SetDropdownOpen(floorDropdownUI.listRoot, floorDropdownCaret, !isFloorDropdownOpen, ref isFloorDropdownOpen);
+            SetDropdownOpen(projectSelectionRoot, projectDropdownCaret, false, ref isProjectDropdownOpen);
+        }
+
+        private static void SetDropdownOpen(RectTransform root, TMP_Text caret, bool open, ref bool state)
+        {
+            state = open;
+
+            if (root != null)
+            {
+                root.gameObject.SetActive(open);
+            }
+
+            if (caret != null)
+            {
+                caret.text = open ? "^" : "v";
+            }
+        }
+
+        private static void SetDropdownLabel(TMP_Text label, string value)
+        {
+            if (label != null)
+            {
+                label.text = value;
+            }
+        }
+
+        private static void SetDropdownInteractable(Button button, bool interactable)
+        {
+            if (button != null)
+            {
+                button.interactable = interactable;
+            }
         }
 
         private static Transform FindChild(Transform root, string name)
