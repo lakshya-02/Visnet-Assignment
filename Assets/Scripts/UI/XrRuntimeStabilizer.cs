@@ -25,7 +25,7 @@ namespace VisnetXR.UI
         private const string LeftControllerMenuAnchorName = "LeftControllerMenuAnchor";
         private const float PressThreshold = 0.2f;
         private const float NearDashboardDistance = 1.15f;
-        private const float HandMountedDashboardScale = 0.001f;
+        private const float HandMountedDashboardScale = 0.0011f;
         private static readonly Vector3 LeftControllerMenuOffset = new(0f, 0.36f, 0.18f);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
