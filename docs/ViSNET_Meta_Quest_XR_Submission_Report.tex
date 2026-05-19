@@ -17,8 +17,9 @@
 
 \titleformat{\section}{\large\bfseries\color{darkink}}{}{0em}{}[\titlerule]
 \setlist[itemize]{leftmargin=1.2em}
+\setlength{\emergencystretch}{2em}
 
-\title{\textbf{ViSNET Meta Quest XR Application}\\Submission Report}
+\title{\textbf{ViSNET Meta Quest XR Application}\\Assignment Report}
 \author{Lakshya Singh}
 \date{May 2026}
 
@@ -26,7 +27,9 @@
 \maketitle
 
 \section{Project Overview}
-This project implements a Meta Quest XR application in Unity with a login system, combined project/floor selection, backend API integration, XR-compatible navigation, and a polished world-space user interface. The experience is designed as a compact product flow rather than a generic assignment screen.
+This project implements a Meta Quest XR application in Unity with a login system, combined project/floor selection, backend API integration, XR-compatible navigation, and a polished world-space user interface. The experience is designed as a compact controller-mounted XR workflow rather than a generic flat login screen.
+
+The final interaction model follows the requested review direction: the main action panel floats above the left controller, and the right controller ray is used to select projects, floors, dropdown options, and menu actions.
 
 \section{Assignment Requirements Covered}
 \begin{itemize}
@@ -34,10 +37,13 @@ This project implements a Meta Quest XR application in Unity with a login system
     \item Backend API integration for login, project listing, and floor listing.
     \item Project options rendered dynamically from API response data.
     \item Floor options rendered dynamically beside the selected project.
+    \item Project and floor choices are presented as side-by-side dropdown selectors.
+    \item Scrollable dropdown content prevents long floor lists, such as Project C, from leaving the panel.
     \item Forward and backward navigation across login, selector, and summary screens.
     \item XR world-space UI suitable for controller ray interaction.
     \item Dashboard is mounted above the left controller, while the right controller ray is used to select floors and trigger menu actions.
     \item Toast notifications for success, failure, selected project, and selected floor.
+    \item Runtime stabilizer improves Play Mode, Meta XR Simulator, and Quest headset interaction reliability.
     \item Organized Unity scripts and a Vercel-ready backend folder.
 \end{itemize}
 
@@ -49,7 +55,7 @@ The solution is split into two main parts:
     \item \textbf{Vercel Backend}: Provides serverless API routes using a minimal Next.js application with hardcoded assignment data.
 \end{itemize}
 
-The Unity application calls the deployed backend URL configured in \path{Assets/Scripts/API/APIConfig.cs}. The application stores the login token, user, selected project, and selected floor in a session manager.
+The Unity application calls the deployed backend URL configured in \path{Assets/Scripts/API/APIConfig.cs}. The application stores the login token, user, selected project, and selected floor in a session manager. Runtime XR setup is handled by a stabilizer script that configures world-space canvases, tracked-device UI raycasters, XR UI input, keyboard fallback, controller placement, and ray interactor settings.
 
 \section{Backend API Documentation}
 The assignment requires one demo credential set. The implemented credential is:
@@ -86,7 +92,7 @@ Returns four selectable projects: Project A, Project B, Project C, and Project D
 Returns floors for the selected project. Each project has different floor data to demonstrate dynamic dropdown behavior.
 
 \section{Unity XR Implementation}
-The Unity project uses a single-scene architecture for reliability and speed. The scene contains a Meta Quest-style world-space dashboard, Inspector-wired UI references, button navigation logic, and backend API calls. The dashboard is attached at runtime to the left controller to match the requested controller-mounted menu behavior, and right-hand interaction is reserved for selecting projects, floors, and buttons.
+The Unity project uses a single-scene architecture for reliability and speed. The scene contains a Meta Quest-style world-space dashboard, Inspector-wired UI references, button navigation logic, and backend API calls. The dashboard is attached at runtime to the left controller to match the requested controller-mounted menu behavior, and right-hand interaction is used for selecting projects, floors, dropdown options, and buttons.
 
 Core script groups:
 \begin{itemize}
@@ -95,13 +101,22 @@ Core script groups:
     \item \texttt{Assets/Scripts/UI}: Login, combined selector, toast, controller feedback, and scene UI bindings.
 \end{itemize}
 
+Key implementation details:
+\begin{itemize}
+    \item \texttt{ManualXrAppController.cs} controls login flow, project loading, floor loading, dropdown state, selected states, and summary screen data.
+    \item \texttt{XrRuntimeStabilizer.cs} keeps the XR rig stable, mounts the dashboard near the left controller, improves Meta XR Simulator ray targeting, and provides fallback keyboard support for Play Mode testing.
+    \item \texttt{FloorDropdownUI.cs} keeps the combined selector panel references clean and Inspector-friendly.
+\end{itemize}
+
 \section{Meta Quest UI/UX Design Approach}
 The interface is designed to feel closer to a Quest-native spatial UI. It uses floating dark panels, high contrast typography, rounded buttons, blue selected states, hover/press feedback, accent rails, status pills, and world-space toast notifications. The UI is readable at VR distance and avoids a flat desktop form layout.
 
-The visual direction uses an Inter/Roboto-style modern sans-serif approach, with TextMeshPro's default font as a safe project fallback. The world-space dashboard is positioned in front of the XR origin at a comfortable viewing distance for Quest testing.
+The floor selection screen was reworked to match the provided reference direction: a left-side action panel, side-by-side project and floor dropdowns, large rounded targets, and minimal visual noise. The layout keeps the selected workflow visible while remaining simple enough to use through a controller ray.
+
+The visual direction uses an Inter/Roboto-style modern sans-serif approach, with TextMeshPro's default font as a safe project fallback. The world-space dashboard is positioned above the left controller and adjusted at runtime to remain reachable for the right controller ray in Meta XR Simulator and headset testing.
 
 \section{AI Usage Disclosure}
-AI assistance was used for planning, documentation structuring, and review checklist support. The final Unity scene UI, integration, testing, and submission build were assembled and reviewed by the developer.
+AI assistance was used for planning, documentation structuring, implementation review, and debugging support. The final Unity scene setup, UI decisions, integration, testing, video recording, and submission build were assembled and reviewed by the developer.
 
 \section{Testing Checklist}
 \begin{itemize}
@@ -110,17 +125,20 @@ AI assistance was used for planning, documentation structuring, and review check
     \item Project options load from the backend API.
     \item Selecting a project highlights it and loads only that project's floors.
     \item Selecting a floor highlights the selected option.
+    \item Project C floor options remain inside the panel through scrollable dropdown behavior.
     \item Summary screen shows user, project, and floor.
     \item Back navigation works.
     \item Left controller carries the floating UI menu above the controller.
     \item Right controller ray interaction selects floors and triggers menu buttons.
     \item Toast notifications fade correctly.
     \item XR Origin is positioned at the scene origin and the dashboard follows the left controller.
+    \item Meta XR Simulator can be used in Play Mode for interaction recording and quick iteration.
+    \item Meta Quest 2/3/Pro headset builds are supported through Android APK build workflow.
     \item Backend tests and production build pass.
     \item APK installs and opens on a Meta Quest device or simulator.
 \end{itemize}
 
-Editor testing can be performed using Unity Play Mode with XR Device Simulator or Meta XR Simulator if available. Final submission testing should prioritize a real Meta Quest 3 or Quest headset APK install because the APK is the required deliverable.
+Editor testing can be performed using Unity Play Mode with Meta XR Simulator or XR Device Simulator. Final submission testing should prioritize a real Meta Quest 3 or Quest headset APK install because the APK is the strongest proof of target-device behavior.
 
 \section{Build and Installation Instructions}
 \begin{enumerate}
@@ -130,8 +148,15 @@ Editor testing can be performed using Unity Play Mode with XR Device Simulator o
     \item Open \texttt{Assets/Scenes/MainScene.unity}.
     \item Verify \texttt{MainScene.unity} contains the world-space panels and assigned \texttt{AppManager} references.
     \item Switch build target to Android.
+    \item Confirm XR Plug-in Management/OpenXR settings are enabled for the Meta Quest target.
     \item Build an APK for Meta Quest.
+    \item Install the APK on Quest 2, Quest 3, or Quest Pro using Meta Quest Developer Hub or \texttt{adb install}.
 \end{enumerate}
+
+\section{Final Submission Notes}
+The resubmission version focuses on the requested interaction correction: the selection UI is controller-mounted above the left controller, and the right controller performs menu and dropdown selection.
+
+The project also includes scrollable dropdown handling, simulator-friendly ray setup, backend deployment, GitHub source code, and a report/video-ready assignment package.
 
 \section{GitHub and Deployment Links}
 \begin{itemize}
