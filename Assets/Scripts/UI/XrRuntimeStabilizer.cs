@@ -26,7 +26,8 @@ namespace VisnetXR.UI
         private const float PressThreshold = 0.2f;
         private const float NearDashboardDistance = 1.15f;
         private const float HandMountedDashboardScale = 0.0011f;
-        private static readonly Vector3 LeftControllerMenuOffset = new(0f, 0.36f, 0.18f);
+        private const float SimulatorRayDistance = 8f;
+        private static readonly Vector3 LeftControllerMenuFallbackOffset = new(0.12f, 0.28f, 0.34f);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Install()
@@ -180,6 +181,7 @@ namespace VisnetXR.UI
             }
 
             menuAnchor = EnsureMenuAnchor(leftControllerAnchor, menuAnchor);
+            PositionMenuForRightHandAccess(menuAnchor, leftControllerAnchor);
             FaceMenuTowardHeadset(menuAnchor);
 
             if (handMountedCanvas.transform.parent != menuAnchor)
@@ -210,7 +212,6 @@ namespace VisnetXR.UI
         {
             if (existingAnchor != null && existingAnchor.parent == leftController)
             {
-                existingAnchor.localPosition = LeftControllerMenuOffset;
                 return existingAnchor;
             }
 
@@ -221,10 +222,44 @@ namespace VisnetXR.UI
                 foundAnchor.SetParent(leftController, false);
             }
 
-            foundAnchor.localPosition = LeftControllerMenuOffset;
+            foundAnchor.localPosition = LeftControllerMenuFallbackOffset;
             foundAnchor.localRotation = Quaternion.identity;
             foundAnchor.localScale = Vector3.one;
             return foundAnchor;
+        }
+
+        private static void PositionMenuForRightHandAccess(Transform anchor, Transform leftController)
+        {
+            Camera mainCamera = Camera.main;
+            if (mainCamera == null)
+            {
+                anchor.localPosition = LeftControllerMenuFallbackOffset;
+                return;
+            }
+
+            Vector3 headsetForward = mainCamera.transform.forward;
+            headsetForward.y = 0f;
+            if (headsetForward.sqrMagnitude < 0.01f)
+            {
+                headsetForward = Vector3.forward;
+            }
+
+            headsetForward.Normalize();
+
+            Vector3 headsetRight = mainCamera.transform.right;
+            headsetRight.y = 0f;
+            if (headsetRight.sqrMagnitude < 0.01f)
+            {
+                headsetRight = Vector3.right;
+            }
+
+            headsetRight.Normalize();
+
+            // Camera-relative placement keeps the panel reachable in simulator even when controller pitch is awkward.
+            anchor.position = leftController.position
+                + (Vector3.up * 0.28f)
+                + (headsetForward * 0.34f)
+                + (headsetRight * 0.18f);
         }
 
         private static void FaceMenuTowardHeadset(Transform anchor)
@@ -531,54 +566,30 @@ namespace VisnetXR.UI
         {
             XRRayInteractor[] rays = FindObjectsByType<XRRayInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             NearFarInteractor[] nearFars = FindObjectsByType<NearFarInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            bool hasRightHandInteractor = HasRightHandInteractor(rays, nearFars);
 
             foreach (XRRayInteractor ray in rays)
             {
-                bool enableInteractor = hasRightHandInteractor ? IsRightHandInteractor(ray) : true;
-                ray.enableUIInteraction = enableInteractor;
-                if (enableInteractor)
-                {
-                    ray.uiPressInput.bypass = this;
-                }
+                ray.enableUIInteraction = true;
+                ray.uiPressInput.bypass = this;
+                ray.lineType = XRRayInteractor.LineType.StraightLine;
+                ray.hitDetectionType = XRRayInteractor.HitDetectionType.Raycast;
+                ray.maxRaycastDistance = Mathf.Max(ray.maxRaycastDistance, SimulatorRayDistance);
+                ray.blockUIOnInteractableSelection = false;
 
                 XRInteractorLineVisual lineVisual = ray.GetComponent<XRInteractorLineVisual>();
                 if (lineVisual != null)
                 {
-                    lineVisual.enabled = enableInteractor;
+                    lineVisual.enabled = true;
+                    lineVisual.overrideInteractorLineLength = true;
+                    lineVisual.lineLength = Mathf.Max(lineVisual.lineLength, SimulatorRayDistance);
                 }
             }
 
             foreach (NearFarInteractor nearFar in nearFars)
             {
-                bool enableInteractor = hasRightHandInteractor ? IsRightHandInteractor(nearFar) : true;
-                nearFar.enableUIInteraction = enableInteractor;
-                if (enableInteractor)
-                {
-                    nearFar.uiPressInput.bypass = this;
-                }
+                nearFar.enableUIInteraction = true;
+                nearFar.uiPressInput.bypass = this;
             }
-        }
-
-        private static bool HasRightHandInteractor(XRRayInteractor[] rays, NearFarInteractor[] nearFars)
-        {
-            foreach (XRRayInteractor ray in rays)
-            {
-                if (IsRightHandInteractor(ray))
-                {
-                    return true;
-                }
-            }
-
-            foreach (NearFarInteractor nearFar in nearFars)
-            {
-                if (IsRightHandInteractor(nearFar))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private static Transform FindControllerTransform(bool leftHand)
